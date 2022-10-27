@@ -34,7 +34,7 @@ php artisan vendor:publish --tag="ma-payments-config"
 php artisan vendor:publish --tag="ma-payments-lang"
 ```
 
-### nafezly-payments.php file
+### ma-payments.php file
 
 ```php
 <?php
@@ -125,7 +125,7 @@ Route::get('/payments/verify/{payment?}',[FrontController::class,'payment_verify
 ## How To Use
 
 ```jsx
-use Nafezly\Payments\PaymobPayment;
+use Ma\Payments\PaymobPayment;
 
 $payment = new PaymobPayment();
 
@@ -174,16 +174,16 @@ $payment->verify($request);
 
 ```php
 
-use Nafezly\Payments\Classes\FawryPayment;
-use Nafezly\Payments\Classes\HyperPayPayment;
-use Nafezly\Payments\Classes\KashierPayment;
-use Nafezly\Payments\Classes\PaymobPayment;
-use Nafezly\Payments\Classes\PayPalPayment;
-use Nafezly\Payments\Classes\ThawaniPayment;
-use Nafezly\Payments\Classes\TapPayment;
-use Nafezly\Payments\Classes\OpayPayment;
-use Nafezly\Payments\Classes\PaytabsPayment;
-use Nafezly\Payments\Classes\PaymobWalletPayment;
+use Ma\Payments\Classes\FawryPayment;
+use Ma\Payments\Classes\HyperPayPayment;
+use Ma\Payments\Classes\KashierPayment;
+use Ma\Payments\Classes\PaymobPayment;
+use Ma\Payments\Classes\PayPalPayment;
+use Ma\Payments\Classes\ThawaniPayment;
+use Ma\Payments\Classes\TapPayment;
+use Ma\Payments\Classes\OpayPayment;
+use Ma\Payments\Classes\PaytabsPayment;
+use Ma\Payments\Classes\PaymobWalletPayment;
 ```
 
 ## Test Cards

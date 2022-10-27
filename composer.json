@@ -1,5 +1,5 @@
 {
-  "name": "Ma/payments",
+  "name": "ma-lara/payments",
   "license": "MIT",
   "description": "Payment helper for Paypal, Paymob, Kashier, Hyperpay and Fawry",
   "keywords": [
@@ -31,7 +31,7 @@
   "extra": {
     "laravel": {
       "providers": [
-        "Ma\\Payments\\NafezlyPaymentsServiceProvider"
+        "Ma\\Payments\\MaPaymentsServiceProvider"
       ],
       "aliases": {
         "MaPayments": "Ma\\Payments\\Facades"

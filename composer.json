@@ -1,0 +1,41 @@
+{
+  "name": "Ma/payments",
+  "license": "MIT",
+  "description": "Payment helper for Paypal, Paymob, Kashier, Hyperpay and Fawry",
+  "keywords": [
+    "online payments",
+    "paypal",
+    "paymob",
+    "kashier",
+    "hyperpay",
+    "fawry"
+  ],
+  "autoload": {
+    "psr-4": {
+      "Ma\\Payments\\": "src/"
+    }
+  },
+  "require": {
+    "php": ">=7.0",
+    "laravel/framework": ">=6.0",
+    "paypal/paypal-checkout-sdk": "1.0.2",
+    "ext-json": "*",
+    "ext-curl": "*"
+  },
+  "authors": [
+    {
+      "name": "Mohamed Allam",
+      "email": "mohamed_allam@windowslive.com"
+    }
+  ],
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Ma\\Payments\\NafezlyPaymentsServiceProvider"
+      ],
+      "aliases": {
+        "MaPayments": "Ma\\Payments\\Facades"
+      }
+    }
+  }
+}

@@ -30,8 +30,8 @@ composer require ma/payments
 ## Publish Vendor Files
 
 ```jsx
-php artisan vendor:publish --tag="nafezly-payments-config"
-php artisan vendor:publish --tag="nafezly-payments-lang"
+php artisan vendor:publish --tag="ma-payments-config"
+php artisan vendor:publish --tag="ma-payments-lang"
 ```
 
 ### nafezly-payments.php file

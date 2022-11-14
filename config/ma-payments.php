@@ -71,6 +71,12 @@ return [
     'PAYTABS_CHECKOUT_LANG' => env('PAYTABS_CHECKOUT_LANG',"AR"),
     'PAYTABS_CURRENCY'=>env('PAYTABS_CURRENCY',"EGP"),
 
+    #Stripe
+    'STRIPE_API_KEY' => '',
+    'STRIPE_API_SECRET' => '',
+    'STRIPE_BASE_URL' => env('STRIPE_BASE_URL', 'https://api.stripe.com'),
+    'STRIPE_CURRENCY' => '',
+
     'VERIFY_ROUTE_NAME' => "verify-payment",
     'APP_NAME'=>env('APP_NAME'),
 

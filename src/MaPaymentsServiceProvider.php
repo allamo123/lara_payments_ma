@@ -13,6 +13,7 @@ use Ma\Payments\Classes\ThawaniPayment;
 use Ma\Payments\Classes\TapPayment;
 use Ma\Payments\Classes\OpayPayment;
 use Ma\Payments\Classes\PaymobWalletPayment;
+use Ma\Payments\Classes\StripePayment;
 
 class MaPaymentsServiceProvider extends ServiceProvider
 {
@@ -78,6 +79,9 @@ class MaPaymentsServiceProvider extends ServiceProvider
         });
         $this->app->bind(PaytabsPayment::class, function () {
             return new PaytabsPayment();
+        });
+        $this->app->bind(PaytabsPayment::class, function () {
+            return new StripePayment();
         });
         
     }

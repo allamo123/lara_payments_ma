@@ -142,4 +142,19 @@ class PaymobWalletPayment extends BaseController implements PaymentInterface
         else
             return __('ma::messages.An_error_occurred_while_executing_the_operation');
     }
+
+    public function getTransaction($transactionId){
+
+        $request_new_token = Http::withOptions(['verify' => false])->withHeaders(['content-type' => 'application/json'])
+        ->post('https://accept.paymobsolutions.com/api/auth/tokens', [
+            "api_key" => $this->paymob_api_key
+        ])->json();
+
+        $get_transaction = Http::withOptions(['verify' => false])
+        ->withHeaders(['content-type' => 'application/json'])
+        ->withToken($request_new_token['token'])
+        ->get('https://accept.paymob.com/api/acceptance/transactions/'.$transactionId)->json();
+
+        return $get_transaction;
+    }
 }

@@ -11,6 +11,7 @@ trait SetVariables
     public $source = null;
     public $currency = null;
     public $amount = null;
+    public $card = null;
 
     /**
      * Sets user ID
@@ -108,6 +109,18 @@ trait SetVariables
         return $this;
     }
 
+    /**
+     * Sets amount
+     *
+     * @param  string  $value
+     * @return $this
+     */
+    public function setCard($value)
+    {
+        $this->card = $value;
+        return $this;
+    }
+
 
     /**
      * set passed vaiables to pay function to be global
@@ -129,6 +142,7 @@ trait SetVariables
         $this->setUserEmail($user_email);
         $this->setUserPhone($user_phone);
         $this->setSource($source);
+        $this->setCard($card);
     }
     
 

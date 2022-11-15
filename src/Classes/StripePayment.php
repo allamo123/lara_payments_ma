@@ -16,14 +16,12 @@ class StripePayment extends BaseController implements PaymentInterface
     private $stripe_api_key;
     private $stripe_api_secret;
     private $stripe_currency;
-    private $verify_route;
 
     public function __construct()
     {
         $this->stripe_api_key = config('ma-payments.STRIPE_API_KEY');
         $this->stripe_api_secret = config('ma-payments.STRIPE_API_SECRET');
         $this->stripe_currency = config('ma-payments.STRIPE_CURRENCY');
-        $this->verify_route = config('ma-payments.STRIPE_VERIFY_ROUTE');
     }
 
     /**

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 use Ma\Payments\Interfaces\PaymentInterface;
 use Ma\Payments\Classes\BaseController;
 
-class FawryPayment extends BaseController implements PaymentInterface 
+class FawryPayment extends BaseController implements PaymentInterface
 {
     public $fawry_url;
     public $fawry_secret;
@@ -39,7 +39,7 @@ class FawryPayment extends BaseController implements PaymentInterface
      * @return string[]
      * @throws MissingPaymentInfoException
      */
-    public function pay($amount = null, $user_id = null, $user_first_name = null, $user_last_name = null, $user_email = null, $user_phone = null, $source = null): array
+    public function pay($amount = null, $user_id = null, $user_first_name = null, $user_last_name = null, $user_email = null, $user_phone = null, $source = null, $card = null): array
     {
         $this->setPassedVariablesToGlobal($amount,$user_id,$user_first_name,$user_last_name,$user_email,$user_phone,$source);
         $required_fields = ['amount', 'user_id', 'user_first_name', 'user_last_name', 'user_email', 'user_phone'];
@@ -66,7 +66,7 @@ class FawryPayment extends BaseController implements PaymentInterface
         $data['secret'] = $secret;
 
         return [
-            'payment_id' => $unique_id, 
+            'payment_id' => $unique_id,
             'html' => $this->generate_html($data),
             'redirect_url'=>""
         ];

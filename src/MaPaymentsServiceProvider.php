@@ -4,14 +4,12 @@ namespace Ma\Payments;
 
 use Illuminate\Support\ServiceProvider;
 use Ma\Payments\Classes\FawryPayment;
-use Ma\Payments\Classes\HyperPayPayment;
 use Ma\Payments\Classes\KashierPayment;
 use Ma\Payments\Classes\PaymobPayment;
 use Ma\Payments\Classes\PayPalPayment;
 use Ma\Payments\Classes\PaytabsPayment;
 use Ma\Payments\Classes\ThawaniPayment;
 use Ma\Payments\Classes\TapPayment;
-use Ma\Payments\Classes\OpayPayment;
 use Ma\Payments\Classes\PaymobWalletPayment;
 use Ma\Payments\Classes\StripePayment;
 
@@ -62,17 +60,11 @@ class MaPaymentsServiceProvider extends ServiceProvider
         $this->app->bind(PaypalPayment::class, function () {
             return new PaypalPayment();
         });
-        $this->app->bind(HyperPayPayment::class, function () {
-            return new HyperPayPayment();
-        });
         $this->app->bind(KashierPayment::class, function () {
             return new KashierPayment();
         });
         $this->app->bind(TapPayment::class, function () {
             return new TapPayment();
-        });
-        $this->app->bind(OpayPayment::class, function () {
-            return new OpayPayment();
         });
         $this->app->bind(PaymobWalletPayment::class, function () {
             return new PaymobWalletPayment();
@@ -80,7 +72,7 @@ class MaPaymentsServiceProvider extends ServiceProvider
         $this->app->bind(PaytabsPayment::class, function () {
             return new PaytabsPayment();
         });
-        $this->app->bind(PaytabsPayment::class, function () {
+        $this->app->bind(StripePayment::class, function () {
             return new StripePayment();
         });
         

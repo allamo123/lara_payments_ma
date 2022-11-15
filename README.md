@@ -4,20 +4,19 @@
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![Made With Love](https://img.shields.io/badge/Made%20With-Love-orange.svg)](https://github.com/chetanraj/awesome-github-badges)
 
-Payment Helper of Payment Gateways ( PayPal - Paymob - Fawry - Thawani - WeAccept - Kashier - Hyperpay - Tap - Opay - Paytabs - Vodaphone Cash - Orange Money - Meza Wallet - Etisalat Cash)
+Payment Helper of Payment Gateways ( PayPal - Paymob - Fawry - WeAccept - Kashier - Hyperpay - Tap - Paytabs - stripe - Vodaphone Cash - Orange Money - Meza Wallet - Etisalat Cash)
 
 
 ## Supported gateways
 
 - [PayPal](https://paypal.com/)
 - [PayMob](https://paymob.com/)
-- [WeAccept](https://paymob.com/)
 - [Kashier](https://kashier.io/)
 - [Fawry](https://fawry.com/)
 - [HyperPay](https://www.hyperpay.com/)
 - [Thawani](https://thawani.om/)
+- [Stripe](https://stripe.com/)
 - [Tap](https://www.tap.company/)
-- [Opay](https://www.opaycheckout.com/)
 - [Paytabs](https://site.paytabs.com/)
 - [E Wallets (Vodaphone Cash - Orange Money - Meza Wallet - Etisalat Cash)](https://paymob.com/)
 
@@ -46,16 +45,6 @@ return [
     'PAYMOB_IFRAME_ID' => env('PAYMOB_IFRAME_ID'),
     'PAYMOB_HMAC' => env('PAYMOB_HMAC'),
     'PAYMOB_CURRENCY'=> env('PAYMOB_CURRENCY',"EGP"),
-
-
-    #HYPERPAY
-    'HYPERPAY_BASE_URL' => env('HYPERPAY_BASE_URL', "https://eu-test.oppwa.com"),
-    'HYPERPAY_URL' => env('HYPERPAY_URL', env('HYPERPAY_BASE_URL') . "/v1/checkouts"),
-    'HYPERPAY_TOKEN' => env('HYPERPAY_TOKEN'),
-    'HYPERPAY_CREDIT_ID' => env('HYPERPAY_CREDIT_ID'),
-    'HYPERPAY_MADA_ID' => env('HYPERPAY_MADA_ID'),
-    'HYPERPAY_APPLE_ID' => env('HYPERPAY_APPLE_ID'),
-    'HYPERPAY_CURRENCY' => env('HYPERPAY_CURRENCY', "SAR"),
 
 
     #KASHIER
@@ -92,14 +81,6 @@ return [
     'TAP_LANG_KEY'=>env('TAP_LANG_KEY','ar'),
 
 
-    #OPAY
-    'OPAY_CURRENCY'=>env('OPAY_CURRENCY',"EGP"),
-    'OPAY_SECRET_KEY'=>env('OPAY_SECRET_KEY'),
-    'OPAY_PUBLIC_KEY'=>env('OPAY_PUBLIC_KEY'),
-    'OPAY_MERCHANT_ID'=>env('OPAY_MERCHANT_ID'),
-    'OPAY_COUNTRY_CODE'=>env('OPAY_COUNTRY_CODE',"EG"),
-    'OPAY_BASE_URL'=>env('OPAY_BASE_URL',"https://sandboxapi.opaycheckout.com"),//https://api.opaycheckout.com for production
-
 
     #PAYMOB_WALLET (vodaphone-cash,orange-money,etisalat-cash,we-cash,meza-wallet) - test phone 01010101010 ,PIN & OTP IS 123456
     'PAYMOB_WALLET_INTEGRATION_ID'=>env('PAYMOB_WALLET_INTEGRATION_ID'),
@@ -110,6 +91,12 @@ return [
     'PAYTABS_BASE_URL' =>   env('PAYTABS_BASE_URL',"https://secure-egypt.paytabs.com"),
     'PAYTABS_CHECKOUT_LANG' => env('PAYTABS_CHECKOUT_LANG',"AR"),
     'PAYTABS_CURRENCY'=>env('PAYTABS_CURRENCY',"EGP"),
+
+     #Stripe
+    'STRIPE_API_KEY' => env('STRIPE_API_KEY', ""),
+    'STRIPE_API_SECRET' => env('STRIPE_API_SECRET',""),
+    'STRIPE_BASE_URL' => env('STRIPE_BASE_URL', 'https://api.stripe.com'),
+    'STRIPE_CURRENCY' => env('STRIPE_CURRENCY', ""),
 
     'VERIFY_ROUTE_NAME' => "verify-payment",
     'APP_NAME'=>env('APP_NAME'),

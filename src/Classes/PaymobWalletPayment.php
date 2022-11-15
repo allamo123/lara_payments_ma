@@ -31,7 +31,7 @@ class PaymobWalletPayment extends BaseController implements PaymentInterface
      * @return void
      * @throws MissingPaymentInfoException
      */
-    public function pay($amount = null, $user_id = null, $user_first_name = null, $user_last_name = null, $user_email = null, $user_phone = null, $source = null)
+    public function pay($amount = null, $user_id = null, $user_first_name = null, $user_last_name = null, $user_email = null, $user_phone = null, $source = null, $card = null)
     {
         $this->setPassedVariablesToGlobal($amount,$user_id,$user_first_name,$user_last_name,$user_email,$user_phone,$source);
         $required_fields = ['amount', 'user_first_name', 'user_last_name', 'user_email', 'user_phone'];
@@ -82,13 +82,13 @@ class PaymobWalletPayment extends BaseController implements PaymentInterface
                     'subtype'=>"WALLET"
                 ],
                 "payment_token"=>$get_url_token['token']
-        ])->json(); 
+        ])->json();
         return [
             'payment_id'=>$get_order['id'],
             'html' => "",
             'redirect_url'=>$get_pay_link['redirect_url']
         ];
-        
+
     }
 
     /**

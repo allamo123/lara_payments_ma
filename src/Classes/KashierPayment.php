@@ -29,7 +29,7 @@ class KashierPayment extends BaseController implements PaymentInterface
         $this->verify_route_name = config('ma-payments.VERIFY_ROUTE_NAME');
     }
 
-    
+
     /**
      * @param $amount
      * @param null $user_id
@@ -40,7 +40,7 @@ class KashierPayment extends BaseController implements PaymentInterface
      * @param null $source
      * @return string[]
      */
-    public function pay($amount = null, $user_id = null, $user_first_name = null, $user_last_name = null, $user_email = null, $user_phone = null, $source = null): array
+    public function pay($amount = null, $user_id = null, $user_first_name = null, $user_last_name = null, $user_email = null, $user_phone = null, $source = null, $card = null): array
     {
         $this->setPassedVariablesToGlobal($amount,$user_id,$user_first_name,$user_last_name,$user_email,$user_phone,$source);
         $required_fields = ['amount'];
@@ -125,7 +125,7 @@ class KashierPayment extends BaseController implements PaymentInterface
                     'process_data' => $request->all()
                 ];
             }
-            
+
         } else {
             return [
                 'success' => false,

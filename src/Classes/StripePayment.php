@@ -8,8 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
 use Ma\Payments\Interfaces\PaymentInterface;
-use Stripe\Stripe;
-use Stripe\Charge;
+use Stripe\StripeClient;
 
 class StripePayment extends BaseController implements PaymentInterface
 {
@@ -36,14 +35,26 @@ class StripePayment extends BaseController implements PaymentInterface
      * @param null $source
      * @return array|Application|RedirectResponse|Redirector
      */
-    public function pay($amount = null, $user_id = null, $user_first_name = null, $user_last_name = null, $user_email = null, $user_phone = null, $source = null)
+    public function pay($amount = null, $user_id = null, $user_first_name = null, $user_last_name = null, $user_email = null, $user_phone = null, $source = null, $card = null)
     {
-        $stripe = Stripe::setApiKey($this->stripe_api_key);
+        $this->setPassedVariablesToGlobal($amount,$user_id,$user_first_name,$user_last_name,$user_email,$user_phone,$source, $card);
 
-        $charge = Charge::create([
-            'amount' => $amount*100,
-            'currency' => $this->stripe_currency,
-            'source' => $source, // obtained with Stripe.js
+        $stripe = new StripeClient($this->stripe_api_secret);
+
+        $token = $stripe->tokens->create([
+            'card' => [
+                'number' =>  $this->card['card_number'],
+                'exp_month' => $this->card['ex_month'],
+                'exp_year' => $this->card['ex_year'],
+                'cvc' => $this->card['cvv']
+            ],
+        ]);
+
+        $stripe->charges->create([
+            'amount' => $this->amount * 100,
+            'currency' =>  $this->stripe_currency,
+            'source' => $token['id'],
+            'description' => 'My First Test Charge (created for API docs at https://www.stripe.com/docs/api)',
         ]);
     }
 

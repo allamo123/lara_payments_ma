@@ -40,7 +40,7 @@ class TapPayment extends BaseController implements PaymentInterface
      * @return Application|RedirectResponse|Redirector
      * @throws MissingPaymentInfoException
      */
-    public function pay($amount = null, $user_id = null, $user_first_name = null, $user_last_name = null, $user_email = null, $user_phone = null, $source = null)
+    public function pay($amount = null, $user_id = null, $user_first_name = null, $user_last_name = null, $user_email = null, $user_phone = null, $source = null, $card = null)
     {
         $this->setPassedVariablesToGlobal($amount,$user_id,$user_first_name,$user_last_name,$user_email,$user_phone,$source);
         $required_fields = ['amount', 'user_first_name', 'user_last_name', 'user_email', 'user_phone'];
@@ -52,34 +52,34 @@ class TapPayment extends BaseController implements PaymentInterface
             "content-type"=>"application/json",
             'lang_code'=>$this->tap_lang_code
         ])->post('https://api.tap.company/v2/charges',[
-            "amount" => $this->amount, 
-            "currency" => $this->currency, 
-            "threeDSecure" => true, 
-            "save_card" => false, 
-            "description" => "Cerdit", 
-            "statement_descriptor" => "Cerdit", 
+            "amount" => $this->amount,
+            "currency" => $this->currency,
+            "threeDSecure" => true,
+            "save_card" => false,
+            "description" => "Cerdit",
+            "statement_descriptor" => "Cerdit",
             "reference" => [
-                "transaction" => $unique_id , 
-                "order" => $unique_id 
-            ], 
+                "transaction" => $unique_id ,
+                "order" => $unique_id
+            ],
             "receipt" => [
-                "email" => true, 
+                "email" => true,
                 "sms" => true
             ], "customer" => [
-                "first_name" => $this->user_first_name, 
-                "middle_name" => "", 
-                "last_name" => $this->user_last_name, 
-                "email" => $this->user_email, 
+                "first_name" => $this->user_first_name,
+                "middle_name" => "",
+                "last_name" => $this->user_last_name,
+                "email" => $this->user_email,
                 "phone" => [
-                    "country_code" => "20", 
+                    "country_code" => "20",
                     "number" => $this->user_phone
                 ]
-            ], 
-            "source" => ["id" => "src_all"], 
-            "post" => ["url" => $this->verify_route_name], 
+            ],
+            "source" => ["id" => "src_all"],
+            "post" => ["url" => $this->verify_route_name],
             "redirect" => ["url" => $this->verify_route_name]
         ])->json();
-        
+
         return [
             'payment_id'=>$response['id'],
             'redirect_url'=>$response['transaction']['url'],
@@ -112,6 +112,5 @@ class TapPayment extends BaseController implements PaymentInterface
                 'process_data' => $response
             ];
         }
-        
     }
 }

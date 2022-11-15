@@ -67,12 +67,16 @@ class StripePayment extends BaseController implements PaymentInterface
 
             return [
                 'success' => true,
-                'verify_route' => $this->verify_route,
-                'payment_id' => $payment['id']
+                'transaction' => $payment
+            ];
+        }
+        else {
+
+            return [
+                'success' => false
             ];
         }
 
-        // return false;
     }
 
     public function verify(Request $request)
@@ -81,20 +85,26 @@ class StripePayment extends BaseController implements PaymentInterface
 
         Cache::forget('payment_id');
 
-        $stripe = new \Stripe\StripeClient(
-            $this->stripe_api_secret
-        );
+        if ($payment_id) {
 
-        $transaction = $stripe->charges->retrieve(
-                $payment_id,
-                []
-        );
+            $stripe = new \Stripe\StripeClient(
+                $this->stripe_api_secret
+            );
 
-        if ($transaction['captured'] && $transaction['paid'] && $transaction['status'] === 'succeeded') {
-            return [
-                'success' => true,
-                'transaction' => $transaction
-            ];
+            $transaction = $stripe->charges->retrieve(
+                    $payment_id,
+                    []
+            );
+
+            if ($transaction['captured'] && $transaction['paid'] && $transaction['status'] === 'succeeded') {
+                return [
+                    'success' => true,
+                    'transaction' => $transaction
+                ];
+            }
+        }
+        else {
+            abort(404);
         }
     }
 }

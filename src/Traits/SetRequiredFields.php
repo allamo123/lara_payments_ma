@@ -22,6 +22,7 @@ trait SetRequiredFields
         $user_email = $arguments[4] ?? null;
         $user_phone = $arguments[5] ?? null;
         $source = $arguments[6] ?? null;
+        $card = $arguments[7] ?? null;
         foreach($required_fields as $field){
             $this->{$field} = $this->{$field} ?? ${$field};
             if (is_null($this->{$field})) throw new MissingPaymentInfoException($field, $gatway_name);

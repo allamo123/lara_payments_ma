@@ -133,7 +133,7 @@ trait SetVariables
      * @param null $source
      * @return void
      */
-    public function setPassedVariablesToGlobal($amount = null, $user_id = null, $user_first_name = null, $user_last_name = null, $user_email = null, $user_phone = null, $source = null)
+    public function setPassedVariablesToGlobal($amount = null, $user_id = null, $user_first_name = null, $user_last_name = null, $user_email = null, $user_phone = null, $source = null, $card = null)
     {
         $this->setAmount($amount);
         $this->setUserId($user_id);

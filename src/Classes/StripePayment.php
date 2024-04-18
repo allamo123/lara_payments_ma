@@ -44,20 +44,22 @@ class StripePayment extends BaseController implements PaymentInterface
 
         $stripe = new StripeClient($this->stripe_api_secret);
 
-        $token = $stripe->tokens->create([
-            'card' => [
-                'name' => $this->card['card_holder_name'],
-                'number' =>  $this->card['card_number'],
-                'exp_month' => $this->card['ex_month'],
-                'exp_year' => $this->card['ex_year'],
-                'cvc' => $this->card['cvv']
-            ],
-        ]);
+        if (config('app.env') === 'production') {
+            $token = $stripe->tokens->create([
+                'card' => [
+                    'name' => $this->card['card_holder_name'],
+                    'number' =>  $this->card['card_number'],
+                    'exp_month' => $this->card['ex_month'],
+                    'exp_year' => $this->card['ex_year'],
+                    'cvc' => $this->card['cvv']
+                ],
+            ]);
+        }
 
         $payment = $stripe->charges->create([
             'amount' => $this->amount * 100,
             'currency' =>  $this->stripe_currency,
-            'source' => $token['id'],
+            'source' => config('app.env') === 'production' ? $token['id'] : 'tok_visa',
             'description' => 'My First Test Charge (created for API docs at https://www.stripe.com/docs/api)',
         ]);
 

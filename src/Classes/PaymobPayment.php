@@ -40,12 +40,12 @@ class PaymobPayment extends BaseController implements PaymentInterface
         $required_fields = ['amount', 'user_first_name', 'user_last_name', 'user_email', 'user_phone'];
         $this->checkRequiredFields($required_fields, 'PayMob', func_get_args());
 
-        $request_new_token = Http::withHeaders(['content-type' => 'application/json'])
+        $request_new_token = Http::withOptions(['verify' => false])->withHeaders(['content-type' => 'application/json'])
             ->post('https://accept.paymobsolutions.com/api/auth/tokens', [
                 "api_key" => $this->paymob_api_key
             ])->json();
 
-        $get_order = Http::withHeaders(['content-type' => 'application/json'])
+        $get_order = Http::withOptions(['verify' => false])->withHeaders(['content-type' => 'application/json'])
             ->post('https://accept.paymobsolutions.com/api/ecommerce/orders', [
                 "auth_token" => $request_new_token['token'],
                 "delivery_needed" => "false",
@@ -53,7 +53,7 @@ class PaymobPayment extends BaseController implements PaymentInterface
                 "items" => []
             ])->json();
 
-        $get_url_token = Http::withHeaders(['content-type' => 'application/json'])
+        $get_url_token = Http::withOptions(['verify' => false])->withHeaders(['content-type' => 'application/json'])
             ->post('https://accept.paymobsolutions.com/api/acceptance/payment_keys', [
                 "auth_token" => $request_new_token['token'],
                 "expiration" => 36000,

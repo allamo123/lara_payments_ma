@@ -44,6 +44,7 @@ class StripePayment extends BaseController implements PaymentInterface
 
         $stripe = new StripeClient($this->stripe_api_secret);
 
+        
         if (config('app.env') === 'production') {
             $token = $stripe->tokens->create([
                 'card' => [

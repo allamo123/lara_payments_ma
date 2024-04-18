@@ -172,6 +172,7 @@ use Ma\Payments\Classes\TapPayment;
 use Ma\Payments\Classes\OpayPayment;
 use Ma\Payments\Classes\PaytabsPayment;
 use Ma\Payments\Classes\PaymobWalletPayment;
+use Ma\Payments\Classes\StripePayment;
 ```
 
 ## Test Cards
@@ -184,3 +185,7 @@ use Ma\Payments\Classes\PaymobWalletPayment;
 - [Opay](https://doc.opaycheckout.com/end-to-end-testing)
 - [PayTabs](https://support.paytabs.com/en/support/solutions/articles/60000712315-what-are-the-test-cards-available-to-perform-payments-)
 
+- Stripe
+card number: 4242424242424242<br>
+card expiry: Any future date<br>
+csv: Any 3 digits <br>

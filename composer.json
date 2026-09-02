@@ -1,6 +1,5 @@
 {
   "name": "ma-lara/payment",
-  "version": "2.0.0",
   "license": "MIT",
   "description": "A Laravel payment gateway package that provides a unified API for integrating multiple payment providers, including Stripe and Paymob, with support for payments, payment verification, retries, refunds, transactions, and webhooks.",
   "keywords": [

@@ -1,12 +1,18 @@
 {
   "name": "ma-lara/payment",
+  "version": "2.0.0",
   "license": "MIT",
-  "description": "Payment helper for Paypal, Paymob, Kashier, Hyperpay and Fawry",
+  "description": "A Laravel payment gateway package that provides a unified API for integrating multiple payment providers, including Stripe and Paymob, with support for payments, payment verification, retries, refunds, transactions, and webhooks.",
   "keywords": [
-    "online payments",
-    "paymob",
-    "paymob_mobile_wallet",
-    "strip"
+      "laravel",
+      "payment",
+      "payments",
+      "payment-gateway",
+      "online-payments",
+      "stripe",
+      "paymob",
+      "paymob-mobile-wallet",
+      "php"
   ],
   "autoload": {
     "psr-4": {

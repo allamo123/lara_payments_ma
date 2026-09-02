@@ -1,14 +1,9 @@
 {
-<<<<<<< HEAD
   "name": "ma-lara/payment",
-=======
-  "name": "ma-lara/payments",
->>>>>>> f8bdc302023ca20d19961ae691112a478ea6409f
   "license": "MIT",
   "description": "Payment helper for Paypal, Paymob, Kashier, Hyperpay and Fawry",
   "keywords": [
     "online payments",
-<<<<<<< HEAD
     "paymob",
     "paymob_mobile_wallet",
     "strip"
@@ -21,23 +16,6 @@
   "require": {
     "php": ">=8.1",
     "laravel/framework": ">=9.0",
-=======
-    "paypal",
-    "paymob",
-    "paymob_mobile_wallet",
-    "kashier",
-    "hyperpay",
-    "fawry"
-  ],
-  "autoload": {
-    "psr-4": {
-      "Ma\\Payments\\": "src/"
-    }
-  },
-  "require": {
-    "php": ">=7.0",
-    "laravel/framework": ">=6.0",
->>>>>>> f8bdc302023ca20d19961ae691112a478ea6409f
     "paypal/paypal-checkout-sdk": "1.0.2",
     "stripe/stripe-php": "*",
     "ext-json": "*",
@@ -52,17 +30,10 @@
   "extra": {
     "laravel": {
       "providers": [
-<<<<<<< HEAD
         "Ma\\Payment\\MaPaymentServiceProvider"
       ],
       "aliases": {
         "MaPayment": "Ma\\Payment\\Facades\\MaPayment"
-=======
-        "Ma\\Payments\\MaPaymentsServiceProvider"
-      ],
-      "aliases": {
-        "MaPayments": "Ma\\Payments\\Facades"
->>>>>>> f8bdc302023ca20d19961ae691112a478ea6409f
       }
     }
   }

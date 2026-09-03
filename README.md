@@ -550,15 +550,40 @@ Angular
 Vanilla JavaScript
 React Native
 Mobile applications
-Other frontends
+Other frontendsth
 ```
+React Example
+```js
+import StripePayment from "../public/js/vendor/ma_payment/stripe/MaPaymentStripe.js";
+
+const Checkout = (data) => {
+
+    const payment = new StripePayment({
+        publishableKey: data.publishableKey,
+        paymentUrl: data.paymentUrl
+        successUrl: data.successUrl,
+        amount: data.amount
+        currency: data.currency,
+        customer: data.customer,
+        source: data.source,
+    });
+
+    const submit = async() => {
+        const { data, success, error } = await payment.pay();
+    }
+
+
+}
+
+```
+
 
 The frontend flow is:
 
 ```text
 Frontend
    │
-   │ Stripe.js
+   │ MaPaymentStripe.js
    ▼
 Create PaymentMethod
    │
@@ -1097,7 +1122,7 @@ The frontend creates the Stripe PaymentMethod and sends the ID to your backend.
 ```text
 Frontend
    │
-   │ Stripe.js
+   │ MaPaymentStripe.js
    ▼
 PaymentMethod
    │

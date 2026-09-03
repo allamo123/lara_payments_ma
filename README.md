@@ -231,13 +231,12 @@ The manager and factory use this registry to resolve the requested gateway.
 
 ## Selecting a Gateway
 
-Use `PaymentGatewayManager` to select a gateway:
+Use `Ma\Payment\Facades\MaPayment` to select a gateway:
 
 ```php
-use Ma\Payment\PaymentGatewayManager;
+use Ma\Payment\Facades\MaPayment;
 
-$gateway = app(PaymentGatewayManager::class)
-    ->driver('stripe');
+$gateway = MaPayment::driver('stripe');
 ```
 
 You can then call the common gateway operations:
@@ -255,8 +254,8 @@ $gateway->refund(...);
 The same architecture is used for Paymob:
 
 ```php
-$gateway = app(PaymentGatewayManager::class)
-    ->driver('paymob');
+$gateway = MaPayment::driver('paymob');
+
 ```
 
 ---
@@ -838,9 +837,11 @@ Paymob callbacks are handled by your application's callback route.
 Example:
 
 ```php
+use Ma\Payment\Facades\MaPayment;
+
 Route::post('/paymob/callback', function (Request $request) {
-    $gateway = app(PaymentGatewayManager::class)
-        ->driver('paymob');
+
+    $gateway = MaPayment::driver('paymob');
 
     return response()->json(
         $gateway->verify($request->all())
@@ -1492,9 +1493,9 @@ config/ma-drivers.php
 
 ```php
 return [
-    'stripe' => StripeGateway::class,
-    'paymob' => PaymobGateway::class,
-    'tap' => TapGateway::class,
+    'stripe' => \Ma\Payment\Gateways\Stripe\StripeGateway::class,
+    'paymob' => \Ma\Payment\Gateways\Paymob\PaymobGateway::class,
+    'tap'    => \Ma\Payment\Gateways\Tap\TapGateway::class,
 ];
 ```
 
@@ -1692,8 +1693,8 @@ lara_payments_ma/
 ├── composer.lock
 │
 ├── config/
-│   ├── ma-drivers.php              # gateway driver registry
-│   └── ma-payment.php              # main package config
+│   ├── ma_payment_drivers.php              # gateway driver registry
+│   └── ma_payment_conf.php              # main package config
 │
 ├── database/
 │   └── migrations/

@@ -128,7 +128,7 @@ php artisan vendor:publish --tag=ma-payment-views
 ### Publish Migration Files
 
 ```bash
-php artisan vendor:publish --tag=ma-payment-views
+php artisan vendor:publish --tag=ma-payment-migrations
 ```
 
 ### Run Migrations
@@ -549,8 +549,8 @@ Vue
 Angular
 Vanilla JavaScript
 React Native
-Mobile applications
-Other frontendsth
+Flutter
+Other
 ```
 React Example
 ```js
@@ -700,7 +700,7 @@ A new local transaction is initially stored as:
 pending
 ```
 
-The callback later determines the final transaction status.
+The callback later determines the final transaction status through paymob webhook handler.
 
 ---
 
@@ -808,14 +808,13 @@ Example:
 
 ```php
 use Illuminate\Http\Request;
-use Ma\Payment\Gateways\Stripe\Services\StripeWebhookHandler;
+use Ma\Payment\Facades\MaPayment;
 
-Route::post('/stripe/webhook', function (
-    Request $request,
-    StripeWebhookHandler $handler
-) {
+Route::post('/stripe/webhook', function (Request $request,) {
+    $gateway = MaPayment::driver('stripe');
+
     return response()->json(
-        $handler->handle(
+        $gateway->verify(
             $request->getContent(),
             $request->header('Stripe-Signature')
         )
@@ -1032,7 +1031,7 @@ Stripe retries the PaymentIntent using a new PaymentMethod.
 
 ### Paymob
 
-Paymob creates a new payment attempt and returns a new payment link.
+Paymob creates a new payment attempt and returns a new payment link for the faild local transaction.
 
 Retry operations should only be allowed for transaction states supported by the gateway implementation.
 

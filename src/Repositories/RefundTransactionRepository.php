@@ -16,10 +16,9 @@ class RefundTransactionRepository
 
     public function getRefundTransaction(string $transactionId): RefundedPaymentTransaction
     {
-        Log::info('reposetory_id', ['id' => $transactionId]);
         return $this->refundTransaction->query()
             ->where('transaction_id', $transactionId)
-            ->lock()
+            ->lockForUpdate()
             ->first();
     }
 

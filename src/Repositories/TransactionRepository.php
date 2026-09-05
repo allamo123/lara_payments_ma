@@ -56,7 +56,7 @@ class TransactionRepository implements TransactionRepositoryInterface
     {
         $transaction = $this->transaction->query()
             ->where('gateway_reference', $ref)
-            ->lock()
+            ->lockForUpdate()
             ->first();
 
         $transaction->update($data);

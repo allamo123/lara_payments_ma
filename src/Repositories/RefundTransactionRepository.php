@@ -2,7 +2,6 @@
 
 namespace Ma\Payment\Repositories;
 
-use Illuminate\Support\Facades\Log;
 use Ma\Payment\Models\RefundedPaymentTransaction;
 
 class RefundTransactionRepository

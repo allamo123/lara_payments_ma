@@ -50,8 +50,11 @@ jobs:
       - name: Set Laravel version
         run: composer require "laravel/framework:${{ matrix.laravel }}" --no-update
 
+      - name: Configure Composer
+        run: composer config audit.block-insecure false
+        
       - name: Install dependencies
-        run: composer config --global audit.block-insecure false && composer install --prefer-dist --no-interaction --no-progress
+        run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run tests
         run: composer test

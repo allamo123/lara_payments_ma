@@ -4,9 +4,9 @@ echo ""
 echo "======================================"
 echo " Running tests before push..."
 echo "======================================"
-echo ""
+echo "🚀 PRE-PUSH HOOK IS RUNNING"
 
-vendor/bin/phpunit
+composer test
 
 TEST_RESULT=$?
 

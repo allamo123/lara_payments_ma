@@ -1609,23 +1609,93 @@ When implementing a new gateway:
 
 # Testing
 
-Automated tests are not currently included in this package.
+The package is prepared for automated testing through PHPUnit and Composer. The complete testing infrastructure — the test runner, the Composer command, a local pre-push protection hook, and a GitHub Actions CI workflow — is already configured in this repository. However, **the actual test cases have not been implemented yet**, so no automated test coverage currently exists.
 
-Testing coverage is planned for a future release and will include:
+## Automated Testing Infrastructure
 
-- Payment creation and processing.
-- Stripe payment flows.
-- Paymob payment flows.
-- Refunds and partial refunds.
-- Payment retries.
-- Stripe webhook signature verification.
-- Stripe webhook event handling.
-- Paymob callback HMAC verification.
-- Invalid and tampered webhook/callback payloads.
-- Already-processed transactions.
-- Unknown or invalid transactions.
+### 1. PHPUnit
 
-Once the test suite is implemented, it will be integrated into the CI workflow to run automatically on pushes and pull requests.
+* PHPUnit is configured as a development dependency (`phpunit/phpunit: ^10.0` in `require-dev`).
+* `composer test` is the standard command for running the test suite (it invokes `phpunit`).
+* `phpunit.xml` defines two test suites: `Unit` (`tests/Unit`) and `Feature` (`tests/Feature`).
+* Test classes are autoloaded through the `Tests\` PSR-4 mapping (`autoload-dev` in `composer.json`).
+
+> **Note:** These suites are currently empty. The presence of this configuration does **not** imply existing test coverage.
+
+### 2. Local Pre-Push Protection
+
+A Git `pre-push` hook is provided in the repository at:
+
+```text
+.github/hooks/pre-push
+```
+
+The hook performs the following on every push:
+
+1. Runs `composer test`.
+2. If the test command fails (non-zero exit code), the push is **rejected**.
+3. If the test command succeeds, the push proceeds.
+
+This is a *preventive development workflow* mechanism. It guarantees that pushes are only made after the test command passes locally. It does **not** represent existing test coverage — the hook simply executes whatever the test suite contains at the time.
+
+### 3. GitHub Actions CI
+
+A GitHub Actions workflow is configured at:
+
+```text
+.github/workflows/test.yaml
+```
+
+It automatically executes the test command (`composer test`) on:
+
+* Pushes to the `main` branch.
+* Pull Requests targeting the `main` branch.
+
+The workflow runs on `ubuntu-latest` and uses a **version matrix** to validate package compatibility across the supported Laravel/PHP combinations:
+
+| PHP   | Laravel |
+| ----- | ------- |
+| 8.1   | 9.*     |
+| 8.2   | 10.*    |
+| 8.2   | 11.*    |
+| 8.2   | 12.*    |
+| 8.3   | 13.*    |
+
+Testing multiple Laravel versions ensures the package works across all Laravel versions it claims to support, rather than only the one used during development. The matrix is configured with `fail-fast: false`, so all combinations run even if one fails; however, **a failed matrix job causes the overall CI workflow to fail**, surfacing incompatibilities in the Checks tab.
+
+Each matrix job installs the matrix-specific Laravel version, installs dependencies, and runs the test suite.
+
+### 4. Pull Request / Branch Protection
+
+On the GitHub side, Pull Requests targeting a protected branch can be combined with **required status checks**:
+
+* The CI workflow runs automatically for every Pull Request.
+* The branch is configured (in the repository settings) to require the CI check, a Pull Request **cannot be merged** while the CI workflow is failing.
+* Failed required checks block the merge regardless of approvals.
+
+This provides a second layer of protection that remains effective even if someone bypasses the local `pre-push` hook (for example, by pushing with `--no-verify` or pushing from a machine where the hook is not activated).
+
+### 5. Protection Flow
+
+```text
+Developer:
+pre-push hook → test command → push allowed/rejected
+
+GitHub:
+Pull Request → GitHub Actions → required checks → merge allowed/rejected
+```
+
+### 6. Current Testing Status
+
+| Component                          | Status                          |
+| ---------------------------------- | ------------------------------- |
+| Testing infrastructure             | Configured                      |
+| PHPUnit                            | Configured                      |
+| Composer `test` command            | Configured                      |
+| Local `pre-push` hook              | Configured                      |
+| GitHub Actions CI                  | Configured                      |
+| Pull Request / branch protection   | Configured                      |
+| Test cases                         | **Not implemented yet**         |
 
 ---
 
@@ -1715,6 +1785,13 @@ lara_payments_ma/
 ├── README.md
 ├── composer.json
 ├── composer.lock
+├── phpunit.xml                             # PHPUnit configuration (Unit / Feature suites)
+│
+├── .github/
+│   ├── hooks/
+│   │   └── pre-push                        # local pre-push hook: runs composer test before pushing
+│   └── workflows/
+│       └── test.yaml                       # CI workflow: PHP/Laravel version matrix test runner
 │
 ├── config/
 │   ├── ma_payment_drivers.php              # gateway driver registry

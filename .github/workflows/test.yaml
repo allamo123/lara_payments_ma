@@ -51,7 +51,7 @@ jobs:
         run: composer require "laravel/framework:${{ matrix.laravel }}" --no-update
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-interaction --no-progress
+        run: composer config --global audit.block-insecure false && composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run tests
         run: composer test

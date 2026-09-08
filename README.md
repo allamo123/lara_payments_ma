@@ -2,7 +2,7 @@
 <p align="center">
     <img alt="GitHub License" src="https://img.shields.io/github/license/allamo123/laravel-grapes?style=flat&label=license">
     <img alt="Packagist Downloads" src="https://img.shields.io/packagist/dm/ma-lara/payments?style=flat&label=downloads">
-    <img alt="GitHub Release" src="https://img.shields.io/github/v/release/allamo123/lara_payments?include_prereleases&style=flat">
+    <img alt="GitHub Release" src="https://img.shields.io/github/v/release/allamo123/lara_payments_ma?include_prereleases&style=flat">
 </p>
 
 <h1 align="center">MA Lara Payment</h1>

@@ -197,7 +197,10 @@ class PaymobGateway extends BaseGateway implements PaymentGatewayInterface
             'meta_data'         => json_encode($refund_data, JSON_PRETTY_PRINT)
         ];
 
-        $remainingAmount = ((int) $transaction->remain_minor_amount - (int) new Money($amount)->toCents());
+        $remainingAmount = $this->calculateRemainMinorAmount(
+            (int) $transaction->remain_minor_amount, 
+            (int) new Money($amount)->toCents()
+        );
 
         $updatedTxnData = [
             'status' => !$remainingAmount ? PaymentStatus::FULLY_REFUNDED : $refundTxnData['refund_type'],

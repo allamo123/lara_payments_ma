@@ -25,11 +25,4 @@ class RefundTransactionRepository
     {
         $this->refundTransaction->create($data);
     }
-    
-    public function updateRefundTransaction(string $transactionId, array $data): RefundedPaymentTransaction
-    {
-       $transaction = $this->getRefundTransaction($transactionId);
-       $transaction->update($data);
-       return $transaction;
-    }
 }

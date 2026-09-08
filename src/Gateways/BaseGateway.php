@@ -53,6 +53,11 @@ abstract class BaseGateway
 		return null;
 	}
 
+	protected function calculateRemainMinorAmount(int $remainAmount, int $minorAmount): int
+	{
+		return ($remainAmount - $minorAmount);
+	}
+
 	abstract protected function sendPaymentRequest(PaymentRequestDTO $paymentDto): array;
 
 	abstract protected function buildPaymentTransactionDTO(array $apiResponse, PaymentRequestDTO $paymentDto, int $package_customer_id): PaymentTransactionDTO;

@@ -2,6 +2,7 @@
 
 namespace Ma\Payment\Gateways\Stripe;
 
+use App\Jobs\UpdateRefundTransaction;
 use Ma\Payment\Gateways\BaseGateway;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -134,8 +135,6 @@ class StripeGateway extends BaseGateway implements PaymentGatewayInterface
             return $event;
         }
 
-        //  Log::info('refund', ['whole_event' => print_r($event, true)]);
-
         if(!$event['handled']){
             Log::info('event', [
                 'event_type' => $event['event_type']
@@ -170,8 +169,6 @@ class StripeGateway extends BaseGateway implements PaymentGatewayInterface
                     'meta_data'          => json_encode($event, JSON_PRETTY_PRINT),
                 ]);
 
-                // Log::info('refund', ['whole_event' => print_r($event, true)]);
-
 
                 return [
                     'handled' => true,
@@ -195,19 +192,18 @@ class StripeGateway extends BaseGateway implements PaymentGatewayInterface
                 PaymentStatus::FULLY_REFUNDED,
             ], true)) 
             {
-                $transactionData['remain_minor_amount'] = ($event['amount_captured'] - $event['amount_refunded']);
+                $transactionData['remain_minor_amount'] = $this->calculateRemainMinorAmount(
+                    $event['amount_captured'],
+                    $event['amount_refunded']
+                );
             }
                 
             $transaction->update($transactionData);
 
-            // Log::info('refund', ['whole_event' => print_r($event, true)]);
-
             if (isset($event['refund_id'])) {
-                Log::info('refund', ['event_id' => 'exist']);
                 
-                $this->RefundTransactionRepository->updateRefundTransaction($event['refund_id'], [
-                    'refund_type' => $event['status']->value,
-                ]);
+                UpdateRefundTransaction::dispatch($event['refund_id'], $event['status']->value);
+
             }
 
             return $transaction->toArray();

@@ -976,6 +976,122 @@ meta_data
 
 This allows applications to retain the original gateway response for reconciliation and debugging.
 
+## Listing & Filtering Transactions
+
+The package provides transaction listing and filtering through every gateway. Both `StripeGateway` and `PaymobGateway` implement these methods, which are declared on the `Ma\Payment\Interfaces\PaymentGatewayInterface` contract:
+
+```php
+public function getTransactions(?string $status = null): Illuminate\Database\Eloquent\Collection;
+
+public function getCustomerTransactions(int $userId, ?string $status = null): Illuminate\Database\Eloquent\Collection;
+```
+
+### Retrieving Transactions
+
+Retrieve transactions through a resolved gateway driver:
+
+```php
+use Ma\Payment\Facades\MaPayment;
+
+$gateway = MaPayment::driver('stripe'); // or 'paymob'
+
+// All transactions (no filter)
+$transactions = $gateway->getTransactions();
+
+// Only succeeded transactions
+$transactions = $gateway->getTransactions('succeeded');
+```
+
+### Filtering by Customer
+
+`getCustomerTransactions()` returns the transactions belonging to a specific application user (matched through the package's local `payment_customers` mapping):
+
+```php
+use Ma\Payment\Facades\MaPayment;
+
+$gateway = MaPayment::driver('paymob');
+
+// All transactions of the user
+$transactions = $gateway->getCustomerTransactions($userId);
+
+// Only refunded transactions of the user
+$transactions = $gateway->getCustomerTransactions($userId, 'fully_refunded');
+```
+
+If the user has no gateway customer mapping, a `Ma\Payment\Exceptions\CustomerNotFoundException` is thrown.
+
+### Available Filters
+
+The only filter parameter implemented is `status` (an optional `?string $status` applied as an exact-match `where('status', $status)` condition on the `payment_transactions` table).
+
+Supported status values are the values of the `Ma\Payment\Enums\PaymentStatus` enum:
+
+```text
+pending
+processing
+succeeded
+failed
+canceled
+fully_refunded
+partially_refunded
+```
+
+Passing a status that does not exist in the database simply returns an empty collection; the package does not validate the status value against the enum.
+
+> **Note:** Filters by gateway, date range, order ID, or gateway reference are **not** exposed through `getTransactions()` / `getCustomerTransactions()`. (Repository lookup helpers such as `getTransactionByRef()`, `getTransactionByOrderId()`, and `getTransactionByGateway()` exist for internal webhook/callback processing, but they are single-record lookups and are not part of the public listing API.)
+
+### Filtering by Multiple Criteria
+
+Combining multiple filters is not supported by the listing methods — the only supported parameter is the single optional `status` filter. To filter by multiple criteria, retrieve the collection and narrow it in your application:
+
+```php
+$transactions = $gateway
+    ->getCustomerTransactions($userId, 'succeeded')
+    ->filter(fn ($t) => $t->gateway === 'stripe');
+```
+
+### Returned Structure
+
+Both methods return an `Illuminate\Database\Eloquent\Collection` of `Ma\Payment\Models\PaymentTransaction` models. **No pagination is implemented** — the underlying query uses `->get()`, so the full result set is loaded.
+
+Each model exposes the following attributes (the model's `$fillable` fields):
+
+| Field                 | Description                                            |
+| --------------------- | ------------------------------------------------------ |
+| `gateway`             | Gateway name (`stripe`, `paymob`)                       |
+| `order_id`            | Gateway order identifier (where applicable)            |
+| `customer_id`         | Local package customer ID                              |
+| `gateway_reference`   | Gateway transaction reference                          |
+| `minor_amount`        | Original amount in minor units (e.g., cents)           |
+| `remain_minor_amount` | Remaining refundable amount in minor units             |
+| `currency`            | Transaction currency                                   |
+| `status`              | Payment status (see `PaymentStatus` values above)      |
+| `source`              | Payment source                                         |
+| `source_subtype`      | Payment source subtype (e.g., card brand)              |
+| `meta_data`           | Raw gateway response                                   |
+
+The model also provides helpers and relations:
+
+* `pounds(): float` — converts `minor_amount` to major units.
+* `customer()` — belongs-to relation to `Ma\Payment\Models\PaymentCustomer`.
+* `refundedPayments()` — has-many relation to `Ma\Payment\Models\RefundedPaymentTransaction`.
+
+Example:
+
+```php
+use Ma\Payment\Facades\MaPayment;
+
+$gateway = MaPayment::driver('stripe');
+
+foreach ($gateway->getCustomerTransactions(auth()->id(), 'succeeded') as $transaction) {
+    $transaction->gateway_reference; // Stripe PaymentIntent ID
+    $transaction->minor_amount;      // e.g. 15050
+    $transaction->pounds();          // 150.5
+    $transaction->status;            // 'succeeded'
+    $transaction->refundedPayments;  // related refund records
+}
+```
+
 ---
 
 # Refunds

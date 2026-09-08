@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Jobs;
+namespace Ma\Payment\Jobs;
 
-use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Ma\Payment\Exceptions\RefundTransactionNotFoundException;

@@ -7,7 +7,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Ma\Payment\Exceptions\RefundTransactionNotFoundException;
 use Ma\Payment\Repositories\RefundTransactionRepository;
 
-class UpdateRefundTransaction implements ShouldQueue
+class UpdateRefundTransactionJob implements ShouldQueue
 {
     use Queueable;
     

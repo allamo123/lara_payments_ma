@@ -840,6 +840,77 @@ charge.refunded
 
 Unhandled events return an appropriate unhandled result rather than being processed as payment events.
 
+### Refund Webhook Race Condition and `UpdateRefundTransactionJob`
+
+Stripe can deliver related webhook events independently. The package therefore cannot assume that the refund child transaction created from `refund.created` will always exist before the `charge.refunded` event attempts to update it:
+
+```text
+refund.created
+→ creates the refund transaction record
+
+charge.refunded
+→ updates the existing refund transaction
+```
+
+Because webhook processing can overlap, or events can arrive in an unexpected order, `charge.refunded` may attempt to update the refund transaction before `refund.created` has created (or committed) the corresponding record.
+
+#### How the Package Solves It
+
+When the `charge.refunded` branch of the Stripe webhook flow (`StripeGateway::verify()`) updates the parent transaction and a `refund_id` is present, the package dispatches `Ma\Payment\Jobs\UpdateRefundTransactionJob` to update the refund transaction record asynchronously:
+
+```php
+UpdateRefundTransactionJob::dispatch($event['refund_id'], $event['status']->value);
+```
+
+The Job (`src/Jobs/UpdateRefundTransactionJob.php`) implements `Illuminate\Contracts\Queue\ShouldQueue` and works as follows:
+
+* It attempts to find the refund transaction through `RefundTransactionRepository::getRefundTransaction()` (which also locks the row with `lockForUpdate()`).
+* If the refund transaction is temporarily unavailable (for example, because `refund.created` has not yet created it), the Job throws `Ma\Payment\Exceptions\RefundTransactionNotFoundException`.
+* Because the exception is thrown from a queued Job, Laravel retries the Job instead of permanently losing the update.
+* The Job controls its retry behavior with the actual configuration from the code:
+  * `$tries = 5`
+  * `backoff(): [2, 4, 5, 6, 7]` (seconds between attempts)
+
+The retry delay gives the `refund.created` webhook time to create the refund transaction before the update is attempted again. Once the refund transaction exists, the Job updates its `refund_type` attribute and completes.
+
+#### Flow
+
+Normal order:
+
+```text
+Stripe webhook
+→ webhook verification
+→ refund event handling
+→ dispatch UpdateRefundTransactionJob
+→ Laravel queue
+→ Job attempts update
+→ refund exists → update succeeds
+```
+
+If the refund transaction does not yet exist:
+
+```text
+Job
+→ RefundTransactionNotFoundException
+→ Laravel retry/backoff
+→ retry
+→ update succeeds once the refund exists
+```
+
+#### Queue Worker Requirement
+
+Because `UpdateRefundTransactionJob` implements `ShouldQueue`, the consuming Laravel application **must have a queue worker running** for the Job to be processed:
+
+```bash
+php artisan queue:work
+```
+
+The package provides and dispatches the Job, but the Laravel application using the package is responsible for configuring its queue connection and running the queue worker.
+
+#### Package Installation Context
+
+`UpdateRefundTransactionJob` is included inside the package (under the `Ma\Payment\Jobs` namespace) and does **not** need to be published or copied into the consuming application's `app/Jobs` directory. The consuming application simply installs the package and runs its normal Laravel queue worker.
+
 ### CSRF
 
 If the webhook endpoint is registered under a CSRF-protected route group, configure the endpoint appropriately for your application.
@@ -1828,6 +1899,7 @@ lara_payments_ma/
     │   ├── GatewayTxnIdAndLocalTxnIdNotSameException.php
     │   ├── MissingPaymentInfoException.php
     │   ├── RefundAmountGreaterThanTransactionAmountException.php
+    │   ├── RefundTransactionNotFoundException.php
     │   ├── TransactionAlreadyProccessedException.php                # (typo: "Proccessed")
     │   ├── TransactionCannotProcessException.php
     │   ├── TransactionFailedException.php
@@ -1835,6 +1907,9 @@ lara_payments_ma/
     │
     ├── Facades/
     │   └── MaPayment.php                   # facade: MaPayment::gateway(...)
+    │
+    ├── Jobs/
+    │   └── UpdateRefundTransactionJob.php  # queued Job: retries refund transaction updates (Stripe webhook race condition)
     │
     ├── Factories/
     │   └── PaymentGatewayFactory.php       # builds gateway instances

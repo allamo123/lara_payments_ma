@@ -16,7 +16,7 @@ use Ma\Payment\Gateways\Stripe\Services\StripeApiService;
 use Ma\Payment\Gateways\Stripe\Services\StripeWebhookHandler;
 use Ma\Payment\Interfaces\PaymentGatewayInterface;
 use Ma\Payment\Interfaces\TransactionRepositoryInterface;
-use Ma\Payment\Jobs\UpdateRefundTransaction as JobsUpdateRefundTransaction;
+use Ma\Payment\Jobs\UpdateRefundTransactionJob;
 use Ma\Payment\Repositories\PaymentCustomerRepository;
 use Ma\Payment\Repositories\RefundTransactionRepository;
 use Ma\Payment\Services\CustomerSerivce;
@@ -202,7 +202,7 @@ class StripeGateway extends BaseGateway implements PaymentGatewayInterface
 
             if (isset($event['refund_id'])) {
                 
-                JobsUpdateRefundTransaction::dispatch($event['refund_id'], $event['status']->value);
+                UpdateRefundTransactionJob::dispatch($event['refund_id'], $event['status']->value);
 
             }
 

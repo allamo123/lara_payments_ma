@@ -34,4 +34,20 @@ final readonly class PaymentTransactionDTO
             'meta_data' => json_encode($this->metadata, JSON_PRETTY_PRINT)
         ];
     }
+
+    public static function fromArray(array $data): PaymentTransactionDTO
+    {
+        return new self (
+            amount: new Money($data['amount']),
+            customerId: $data['locale_customer_id'],
+            source: $data['source'],
+            source_subtype: $data['source_subtype'] ?? null,
+            gatewayName: $data['gateway'],
+            orderId: $data['orderId'] ?? null,
+            status: $data['payment_status'],
+            gatewayRefrence: isset($data['gateway_reference']) ? $data['gateway_reference'] : null,
+            currency: $data['currency'],
+            metadata: $data,
+        );
+    }
 }

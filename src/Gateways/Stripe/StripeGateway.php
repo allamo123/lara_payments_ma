@@ -98,20 +98,14 @@ class StripeGateway extends BaseGateway implements PaymentGatewayInterface
         return $this->stripeService->createPaymentIntent($paymentDto->paymentData());
     }
 
-    protected function buildPaymentTransactionDTO(array $apiResponse, PaymentRequestDTO $paymentDto, int $package_customer_id): PaymentTransactionDTO
+    protected function buildPaymentTransactionDTO(array $apiResponse, PaymentRequestDTO $paymentDto): PaymentTransactionDTO
     {
-        return new PaymentTransactionDTO(
-            amount: $paymentDto->amount,
-            customerId: $package_customer_id,
-            source: $paymentDto->source,
-            gatewayName: $this->gateway_name,
-            gatewayRefrence: $apiResponse['id'],
-            orderId: null,
-            status: $this->mapStatus(strtolower($apiResponse['status']))->value,
-            currency: $apiResponse['currency'],
-            source_subtype: $paymentDto->payment_method['card']['brand'],
-            metadata: $apiResponse,
-        );
+        // dd($paymentDto->payment_method);
+        $apiResponse['gateway_reference'] = $apiResponse['id'];
+        $apiResponse['payment_status'] = $this->mapStatus(strtolower($apiResponse['status']))->value;
+        $apiResponse['source_subtype'] = $paymentDto->payment_method['card']['brand'];
+
+        return PaymentTransactionDTO::fromArray($apiResponse);
     }
 
     public function verify(array|string $callbackResponse, ?string $signature = null): array

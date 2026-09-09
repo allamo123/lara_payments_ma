@@ -35,6 +35,7 @@ class TransactionRepository implements TransactionRepositoryInterface
     {
         return $this->transaction->query()
             ->where('order_id', $orderId)
+            ->lockForUpdate()
             ->first();
     }
 

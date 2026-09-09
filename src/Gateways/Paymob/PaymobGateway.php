@@ -60,19 +60,12 @@ class PaymobGateway extends BaseGateway implements PaymentGatewayInterface
         return $response;    
     }
 
-    protected function buildPaymentTransactionDTO(array $apiResponse, PaymentRequestDTO $paymentDto, int $package_customer_id): PaymentTransactionDTO
+    protected function buildPaymentTransactionDTO(array $apiResponse, $paymentDto = null): PaymentTransactionDTO
     {
-        return new PaymentTransactionDTO(
-            amount: $paymentDto->amount,
-            customerId: $package_customer_id,
-            source: $paymentDto->source,
-            gatewayName: $this->gateway_name,
-            orderId: (int) isset($apiResponse['order']) ? $apiResponse['order']['id'] : null,
-            status: $this->mapStatus(strtolower($apiResponse['order']['payment_status']))->value,
-            gatewayRefrence: null,
-            currency: $apiResponse['order']['currency'],
-            metadata: $apiResponse,
-        );
+        $apiResponse['orderId'] = $apiResponse['order']['id'];
+        $apiResponse['payment_status'] = $this->mapStatus(strtolower($apiResponse['order']['payment_status']))->value;
+
+        return PaymentTransactionDTO::fromArray($apiResponse);
     }
     
     public function verify(array|string $callbackResonse, ?string $signature = null): array
@@ -97,7 +90,9 @@ class PaymobGateway extends BaseGateway implements PaymentGatewayInterface
             'source_subtype' => strtolower($callbackResonse['source_data_sub_type']),
         ];
 
-        $this->transactionRepository->updateByOrderId($callbackResonse['order'], $txn_data);
+        DB::transaction(function () use ($callbackResonse, $txn_data) {
+            $this->transactionRepository->updateByOrderId($callbackResonse['order'], $txn_data);
+        });
 
         return [
             'payment_id' => $callbackResonse['order'],

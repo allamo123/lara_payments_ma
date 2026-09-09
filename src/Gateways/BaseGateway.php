@@ -36,8 +36,18 @@ abstract class BaseGateway
     	}
 		
 		$response = $this->sendPaymentRequest($paymentDto);
+
+		$response['amount'] = $paymentDto->amount->value();
+
+		$response['currency'] = $paymentDto->currency;
+
+		$response['locale_customer_id'] = $customer->id;
+
+		$response['source'] = $paymentDto->source;
+
+		$response['gateway'] = $this->gateway_name;
 		
-		$paymentTransactionDTO = $this->buildPaymentTransactionDTO($response, $paymentDto, $customer->id);
+		$paymentTransactionDTO = $this->buildPaymentTransactionDTO($response, $paymentDto);
 		
 		$this->transactionRepository->createOrUpdate(
             $isRetry ? $data['id'] : null,
@@ -60,7 +70,7 @@ abstract class BaseGateway
 
 	abstract protected function sendPaymentRequest(PaymentRequestDTO $paymentDto): array;
 
-	abstract protected function buildPaymentTransactionDTO(array $apiResponse, PaymentRequestDTO $paymentDto, int $package_customer_id): PaymentTransactionDTO;
+	abstract protected function buildPaymentTransactionDTO(array $apiResponse, PaymentRequestDTO $paymentDto): PaymentTransactionDTO;
 
 	protected function mapStatus(string $status): PaymentStatus
 	{

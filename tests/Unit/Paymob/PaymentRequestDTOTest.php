@@ -26,21 +26,22 @@ class PaymentRequestDTOTest extends TestCase
             'gateway' => 'paymob'
         ];
 
-        $DTO = PaymentRequestDTO::fromArray($data);
+        $PaymentDTO = PaymentRequestDTO::fromArray($data);
 
-        $this->assertInstanceOf(PaymentRequestDTO::class, $DTO);
+        $this->assertInstanceOf(PaymentRequestDTO::class, $PaymentDTO);
 
-        $this->assertSame(new Money($data['amount'])->toCents(), $DTO->amount->toCents());
-        $this->assertSame($data['currency'], $DTO->currency);
+        $this->assertSame(new Money($data['amount'])->toCents(), $PaymentDTO->amount->toCents());
+        
+        $this->assertSame($data['currency'], $PaymentDTO->currency);
 
-        $this->assertSame(new UserEmail($data['customer']['email'])->value(), $DTO->user_email->value());
-        $this->assertSame($data['customer']['id'], $DTO->user_id);
-        $this->assertSame($data['customer']['first_name'], $DTO->user_first_name);
-        $this->assertSame($data['customer']['last_name'], $DTO->user_last_name);
-        $this->assertSame($data['customer']['phone'], $DTO->user_phone);
+        $this->assertSame(new UserEmail($data['customer']['email'])->value(), $PaymentDTO->user_email->value());
+        $this->assertSame($data['customer']['id'], $PaymentDTO->user_id);
+        $this->assertSame($data['customer']['first_name'], $PaymentDTO->user_first_name);
+        $this->assertSame($data['customer']['last_name'], $PaymentDTO->user_last_name);
+        $this->assertSame($data['customer']['phone'], $PaymentDTO->user_phone);
 
-        $this->assertSame($data['source'], $DTO->source);
-        $this->assertSame($data['gateway'], $DTO->gateway);
+        $this->assertSame($data['source'], $PaymentDTO->source);
+        $this->assertSame($data['gateway'], $PaymentDTO->gateway);
         
 
     }

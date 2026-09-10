@@ -7,6 +7,7 @@ use PHPUnit\Framework\TestCase;
 use Ma\Payment\DTOS\PaymentRequestDTO;
 use Ma\Payment\ValueObjects\Money;
 use Ma\Payment\ValueObjects\UserEmail;
+use Ma\Payment\ValueObjects\UserId;
 use PharIo\Manifest\Email;
 
 class PaymentRequestDTOTest extends TestCase
@@ -33,13 +34,14 @@ class PaymentRequestDTOTest extends TestCase
 
         $money = new Money($data['amount']);
         $email = new UserEmail($data['customer']['email']);
+        $userId = new UserId($data['customer']['id']);
 
         $this->assertSame($money->toCents(), $PaymentDTO->amount->toCents());
         
         $this->assertSame($data['currency'], $PaymentDTO->currency);
 
         $this->assertSame($email->value(), $PaymentDTO->user_email->value());
-        $this->assertSame($data['customer']['id'], $PaymentDTO->user_id);
+        $this->assertSame($userId->value(), $PaymentDTO->user_id->value());
         $this->assertSame($data['customer']['first_name'], $PaymentDTO->user_first_name);
         $this->assertSame($data['customer']['last_name'], $PaymentDTO->user_last_name);
         $this->assertSame($data['customer']['phone'], $PaymentDTO->user_phone);
@@ -58,7 +60,7 @@ class PaymentRequestDTOTest extends TestCase
             'amount' => -100,
             'currency' => 'EGP',
             'customer' => [
-                'id' => 1,
+                'id' => 0,
                 'first_name' => 'John',
                 'last_name' => 'Doe',
                 'email' => 'john@example.com',

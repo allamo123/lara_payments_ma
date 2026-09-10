@@ -2,13 +2,15 @@
 
 namespace Ma\Payment\DTOs;
 
+use InvalidArgumentException;
 use Ma\Payment\ValueObjects\Money;
+use Ma\Payment\ValueObjects\UserId;
 
 final readonly class PaymentTransactionDTO
 {
     public function __construct(
         public readonly Money $amount,
-        public readonly int $customerId,
+        public readonly UserId $customerId,
         public readonly string $source,
         public readonly string $gatewayName,
         public readonly string $status,
@@ -23,11 +25,11 @@ final readonly class PaymentTransactionDTO
     {
         return [
             'minor_amount' => $this->amount->toCents(),
-            'customer_id' => $this->customerId,
+            'customer_id' => $this->customerId->value(),
             'source' => $this->source,
             'source_subtype' => $this->source_subtype ?? null,
             'gateway' => $this->gatewayName,
-            'order_id' => $this->orderId ? $this->orderId : null,
+            'order_id' => (int) $this->orderId ??  null,
             'gateway_reference' => $this->gatewayRefrence ? $this->gatewayRefrence : null,
             'status' => $this->status,
             'currency' => $this->currency,
@@ -37,9 +39,14 @@ final readonly class PaymentTransactionDTO
 
     public static function fromArray(array $data): PaymentTransactionDTO
     {
+        if (!$data['gateway'] || $data['gateway'] === '') {
+            throw new InvalidArgumentException("Not valid gatway name");
+            
+        }
+
         return new self (
             amount: new Money($data['amount']),
-            customerId: $data['locale_customer_id'],
+            customerId: new UserId($data['locale_customer_id']),
             source: $data['source'],
             source_subtype: $data['source_subtype'] ?? null,
             gatewayName: $data['gateway'],

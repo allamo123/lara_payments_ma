@@ -6,7 +6,7 @@ echo " Running tests before push..."
 echo "======================================"
 echo "🚀 PRE-PUSH HOOK IS RUNNING"
 
-composer test
+composer test -- --testdox
 
 TEST_RESULT=$?
 

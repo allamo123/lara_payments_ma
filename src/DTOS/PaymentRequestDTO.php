@@ -4,6 +4,7 @@ namespace Ma\Payment\DTOS;
 
 use Ma\Payment\ValueObjects\Money;
 use Ma\Payment\ValueObjects\UserEmail;
+use Ma\Payment\ValueObjects\UserId;
 
 final class PaymentRequestDTO
 {
@@ -11,7 +12,7 @@ final class PaymentRequestDTO
     public readonly ?array $payment_method;
     public readonly Money $amount;
     public readonly string $currency;
-    public readonly int $user_id;
+    public readonly UserId $user_id;
     public ?string $gateway_customer_id;
     public readonly string $user_first_name; 
     public readonly string $user_last_name;
@@ -23,7 +24,7 @@ final class PaymentRequestDTO
         string $gateway,
         Money $amount,
         string $currency,
-        int $user_id, 
+        UserId $user_id, 
         string $user_first_name, 
         string $user_last_name, 
         UserEmail $user_email, 
@@ -51,7 +52,7 @@ final class PaymentRequestDTO
             gateway: $data['gateway'],
             amount: new Money($data['amount']),
             currency: $data['currency'],
-            user_id: $data['customer']['id'],
+            user_id: new UserId($data['customer']['id']),
             user_first_name: $data['customer']['first_name'],
             user_last_name: $data['customer']['last_name'],
             user_email: new UserEmail($data['customer']['email']),
@@ -66,7 +67,7 @@ final class PaymentRequestDTO
     {
         return [
             'gateway' => $this->gateway,
-            'user_id' => $this->user_id,
+            'user_id' => $this->user_id->value(),
             'gateway_customer_id' => $this->gateway_customer_id,
             'name' => $this->user_first_name.' '.$this->user_last_name,
             'email'  => $this->user_email->value(),

@@ -36,15 +36,15 @@ class MaPaymentServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->bind(
-            PaymentGatewayInterface::class,
-            PaymobGateway::class,
-        );
+        // $this->app->bind(
+        //     PaymentGatewayInterface::class,
+        //     PaymobGateway::class,
+        // );
         
-        $this->app->bind(
-            PaymentGatewayInterface::class,
-            StripeGateway::class,
-        );
+        // $this->app->bind(
+        //     PaymentGatewayInterface::class,
+        //     StripeGateway::class,
+        // );
 
         $this->app->bind(
             TransactionRepositoryInterface::class,

@@ -14,7 +14,7 @@ class PaymentGatewayFactory
         $drivers = config("ma-drivers");
         
         if (!array_key_exists($driver, $drivers)) {
-            throw new Exception("Payment gateway [driver] does not exist");
+            throw new Exception("Payment gateway [$driver] does not exist");
         }
 
         $class = $drivers[$driver];

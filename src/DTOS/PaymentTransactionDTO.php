@@ -6,7 +6,7 @@ use InvalidArgumentException;
 use Ma\Payment\ValueObjects\Money;
 use Ma\Payment\ValueObjects\UserId;
 
-final readonly class PaymentTransactionDTO
+final class PaymentTransactionDTO
 {
     public function __construct(
         public readonly Money $amount,

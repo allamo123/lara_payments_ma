@@ -21,20 +21,30 @@ jobs:
 
       matrix:
         include:
-          - php: "8.1"
-            laravel: "9.*"
+          - php: '8.1'
+            laravel: '9.*'
+            testbench: '^7.0'
+            phpunit: '^10.0'
 
-          - php: "8.2"
-            laravel: "10.*"
+          - php: '8.2'
+            laravel: '10.*'
+            testbench: '^8.0'
+            phpunit: '^10.0'
 
-          - php: "8.2"
-            laravel: "11.*"
+          - php: '8.3'
+            laravel: '11.*'
+            testbench: '^9.0'
+            phpunit: '^11.0'
 
-          - php: "8.2"
-            laravel: "12.*"
+          - php: '8.3'
+            laravel: '12.*'
+            testbench: '^10.0'
+            phpunit: '^11.5'
 
-          - php: "8.3"
-            laravel: "13.*"
+          - php: '8.3'
+            laravel: '13.*'
+            testbench: '^11.0'
+            phpunit: '^11.5.50'
 
     steps:
       - name: Checkout code
@@ -43,12 +53,14 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{matrix.php}}
-          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite
-          coverage: none
+          php-version: ${{ matrix.php }}
 
-      - name: Set Laravel version
-        run: composer require "laravel/framework:${{ matrix.laravel }}" --no-update
+      - name: Configure matrix dependencies
+        run: |
+          composer require --dev --no-update \
+            "laravel/framework:${{ matrix.laravel }}" \
+            "orchestra/testbench:${{ matrix.testbench }}" \
+            "phpunit/phpunit:${{ matrix.phpunit }}"
 
       - name: Configure Composer
         run: composer config audit.block-insecure false

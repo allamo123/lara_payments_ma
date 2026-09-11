@@ -29,7 +29,7 @@ final class PaymentTransactionDTO
             'source' => $this->source,
             'source_subtype' => $this->source_subtype ?? null,
             'gateway' => $this->gatewayName,
-            'order_id' => (int) $this->orderId ??  null,
+            'order_id' => $this->orderId ? (int) $this->orderId :  null,
             'gateway_reference' => $this->gatewayRefrence ? $this->gatewayRefrence : null,
             'status' => $this->status,
             'currency' => $this->currency,

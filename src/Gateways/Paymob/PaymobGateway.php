@@ -5,7 +5,7 @@ namespace Ma\Payment\Gateways\Paymob;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Ma\Payment\DTOS\PaymentRequestDTO;
-use Ma\Payment\DTOs\PaymentTransactionDTO;
+use Ma\Payment\DTOS\PaymentTransactionDTO;
 use Ma\Payment\Enums\PaymentStatus;
 use Ma\Payment\Interfaces\PaymentGatewayInterface;
 use Ma\Payment\Interfaces\TransactionRepositoryInterface;

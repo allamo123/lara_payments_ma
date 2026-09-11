@@ -3,7 +3,7 @@
 namespace Ma\Payment\Gateways;
 
 use Ma\Payment\DTOS\PaymentRequestDTO;
-use Ma\Payment\DTOs\PaymentTransactionDTO;
+use Ma\Payment\DTOS\PaymentTransactionDTO;
 use Ma\Payment\Enums\PaymentStatus;
 use Ma\Payment\Interfaces\TransactionRepositoryInterface;
 use Ma\Payment\Services\CustomerSerivce;

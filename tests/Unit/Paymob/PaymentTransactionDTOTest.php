@@ -3,7 +3,7 @@
 namespace Tests\Unit\Paymob;
 
 use InvalidArgumentException;
-use Ma\Payment\DTOs\PaymentTransactionDTO;
+use Ma\Payment\DTOS\PaymentTransactionDTO;
 use Ma\Payment\ValueObjects\Money;
 use Ma\Payment\ValueObjects\UserId;
 use PHPUnit\Framework\TestCase;

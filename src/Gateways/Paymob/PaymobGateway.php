@@ -167,7 +167,7 @@ class PaymobGateway extends BaseGateway implements PaymentGatewayInterface
            throw new RefundAmountGreaterThanTransactionAmountException($transaction->id, $amount, $transaction->minor_amount);
         }
 
-        $refund_res  = $this->paymobApiService->refund($transaction->gateway_reference, new Money($amount)->toCents());
+        $refund_res  = $this->paymobApiService->refund($transaction->gateway_reference, (new Money($amount))->toCents());
 
         if ((int) $refund_res['order']['id'] !== (int) $transaction->order_id) {
             throw new GatewatTxnOrderIdAndLocalTxnOrderIdNotSameException($transaction->id, $transaction->gateway_reference, $this->gateway_name);
@@ -194,7 +194,7 @@ class PaymobGateway extends BaseGateway implements PaymentGatewayInterface
 
         $remainingAmount = $this->calculateRemainMinorAmount(
             (int) $transaction->remain_minor_amount, 
-            (int) new Money($amount)->toCents()
+            (int) (new Money($amount))->toCents()
         );
 
         $updatedTxnData = [

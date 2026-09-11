@@ -26,19 +26,20 @@ class SuccessfulPaymentTest extends TestCase
         ];
 
         $orderId = 12345;
+        $amount = new Money($data['amount']);
 
         Http::fake([
             'https://accept.paymobsolutions.com/*' => Http::sequence()
                 ->push(['token' => 'AUTH_TOKEN'], 200)                              // POST /api/auth/tokens
                 ->push([                                                            // POST /api/api/ecommerce/orders
                     'id' => $orderId,
-                    'amount_cents' => new Money($data['amount'])->toCents(),
+                    'amount_cents' => $amount->toCents(),
                     'payment_status' => PaymentStatus::PENDING->value,
                 ], 200)
                 ->push([                                                            // POST /api/acceptance/payment_keys
                     'token' => 'PAYMENT_TOKEN',
                     "expiration" => 36000,
-                    "amount_cents" => new Money($data['amount'])->toCents(),
+                    "amount_cents" => $amount->toCents(),
                     "order_id" => $orderId,
                     'billing_data' => [
                         'first_name' => $data['customer']['first_name'],

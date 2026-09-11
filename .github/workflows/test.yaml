@@ -66,7 +66,7 @@ jobs:
         run: composer config audit.block-insecure false
         
       - name: Install dependencies
-        run: composer update --prefer-dist --no-interaction --no-progress
+        run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run tests
         run: composer test -- --testdox

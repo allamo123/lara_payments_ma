@@ -45,8 +45,8 @@ class StripeGateway extends BaseGateway implements PaymentGatewayInterface
 
             return [
                 'status' => $payment['status'],
-                'minor_amount' => new Money($payment['amount'])->toCents(),
-                'amount_received' => new Money($payment['amount_received'])->toPounds(),
+                'minor_amount' => (new Money($payment['amount']))->toCents(),
+                'amount_received' => (new Money($payment['amount_received']))->toPounds(),
             ];
         } catch (\Stripe\Exception\CardException $e) {
 
@@ -57,7 +57,7 @@ class StripeGateway extends BaseGateway implements PaymentGatewayInterface
             $localCustomer = $this->customerService->getCustomerByUserId($data['customer']['id']);
 
             $paymentTransactionDTO = new PaymentTransactionDTO(
-                amount: new Money($paymentIntent['amount']),
+                amount: (new Money($paymentIntent['amount'])),
                 customerId: $localCustomer->id,
                 source: $data['source'],
                 gatewayName: $this->gateway_name,
@@ -228,8 +228,8 @@ class StripeGateway extends BaseGateway implements PaymentGatewayInterface
 
         return [
             'status' => $payment['status'],
-            'minor_amount' => new Money($payment['amount'])->toCents(),
-            'amount_received' => new Money($payment['amount_received'])->toPounds(),
+            'minor_amount' => (new Money($payment['amount']))->toCents(),
+            'amount_received' => (new Money($payment['amount_received']))->toPounds(),
         ];
     }
 
@@ -245,7 +245,7 @@ class StripeGateway extends BaseGateway implements PaymentGatewayInterface
            throw new RefundAmountGreaterThanTransactionAmountException($transaction->id, $amount, $transaction->minor_amount);
         }
 
-       $payment = $this->stripeService->refundPayment($transaction->gateway_reference, new Money($amount)->toCents());
+       $payment = $this->stripeService->refundPayment($transaction->gateway_reference, (new Money($amount))->toCents());
 
         if ((string) $payment['payment_intent'] !== (string) $transaction->gateway_reference) {
             throw new GatewatTxnOrderIdAndLocalTxnOrderIdNotSameException($transaction->id, $transaction->gateway_reference, $this->gateway_name);

@@ -8,7 +8,6 @@ use Ma\Payment\DTOS\PaymentRequestDTO;
 use Ma\Payment\ValueObjects\Money;
 use Ma\Payment\ValueObjects\UserEmail;
 use Ma\Payment\ValueObjects\UserId;
-use PharIo\Manifest\Email;
 
 class PaymentRequestDTOTest extends TestCase
 {

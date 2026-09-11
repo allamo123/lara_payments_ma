@@ -1,6 +1,6 @@
 <?php
 
-namespace Ma\Payment\DTOs;
+namespace Ma\Payment\DTOS;
 
 use InvalidArgumentException;
 use Ma\Payment\ValueObjects\Money;

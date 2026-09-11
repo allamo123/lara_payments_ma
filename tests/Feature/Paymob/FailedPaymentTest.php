@@ -26,6 +26,7 @@ class FailedPaymentTest extends TestCase
         ];
 
         $orderId = 67890;
+        $amount = new Money($data['amount']);
 
         // Fake the Paymob API responses with an order whose payment_status is `failed`
         Http::fake([
@@ -33,13 +34,13 @@ class FailedPaymentTest extends TestCase
                 ->push(['token' => 'AUTH_TOKEN'], 200)                              // POST /api/auth/tokens
                 ->push([                                                            // POST /api/api/ecommerce/orders
                     'id' => $orderId,
-                    'amount_cents' => new Money($data['amount'])->toCents(),
+                    'amount_cents' => $amount->toCents(),
                     'payment_status' => PaymentStatus::FAILED,
                 ], 200)
                 ->push([                                                            // POST /api/acceptance/payment_keys
                     'token' => 'PAYMENT_TOKEN',
                     "expiration" => 36000,
-                    "amount_cents" => new Money($data['amount'])->toCents(),
+                    "amount_cents" => $amount->toCents(),
                     "order_id" => $orderId,
                     'billing_data' => [
                         'first_name' => $data['customer']['first_name'],
@@ -70,7 +71,7 @@ class FailedPaymentTest extends TestCase
         $transaction = $paymob->getTransactions(PaymentStatus::FAILED->value);
 
         $this->assertCount(1, $transaction);
-        $this->assertEquals(new Money($data['amount'])->toCents(), $transaction[0]->minor_amount);
+        $this->assertEquals($amount->toCents(), $transaction[0]->minor_amount);
         $this->assertEquals(PaymentStatus::FAILED->value, $transaction[0]->status);
         $this->assertEquals($orderId, $transaction[0]->order_id);
     }

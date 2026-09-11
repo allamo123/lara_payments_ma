@@ -8,7 +8,7 @@ use Ma\Payment\Facades\MaPayment;
 use Ma\Payment\ValueObjects\Money;
 use Tests\TestCase;
 
-class FaildPaymentTest extends TestCase
+class FailedPaymentTest extends TestCase
 {
     public function test_failed_payment_status(): void
     {

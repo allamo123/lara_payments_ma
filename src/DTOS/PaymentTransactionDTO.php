@@ -50,7 +50,7 @@ final class PaymentTransactionDTO
             source: $data['source'],
             source_subtype: $data['source_subtype'] ?? null,
             gatewayName: $data['gateway'],
-            orderId: $data['orderId'] ?? null,
+            orderId: isset($data['orderId']) ? $data['orderId'] : null,
             status: $data['payment_status'],
             gatewayRefrence: isset($data['gateway_reference']) ? $data['gateway_reference'] : null,
             currency: $data['currency'],

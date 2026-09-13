@@ -38,7 +38,7 @@ class PaymobApiService
     {
         $request_new_token = $this->getAuthenticationToken();
 
-        $get_order =  $this->clientApiService->post(self::BASE_API . '/api/ecommerce/orders', [
+        $get_order =  $this->clientApiService->post(self::BASE_API . '/ecommerce/orders', [
             "auth_token" => $request_new_token['token'],
             "delivery_needed" => "false",
             "amount_cents" => $amount * 100,
@@ -114,5 +114,26 @@ class PaymobApiService
         );
 
         return $refund_response;
+    }
+
+    public function createSubscriptionPlan(array $data): array
+    {
+        $request_new_token = $this->getAuthenticationToken();
+
+        $paymentPlan =  $this->clientApiService->post(self::BASE_API . '/acceptance/subscription-plans', [
+            "auth_token" => $request_new_token['token'],
+            "integration" => $this->paymob_integration_id,
+            ...$data
+        ]);
+
+        return $paymentPlan;
+
+    }
+
+    public function ListSubscriptionPlans(): array
+    {
+        $request_new_token = $this->getAuthenticationToken();
+
+        return $this->clientApiService->get(self::BASE_API. '/acceptance/subscription-plans', $request_new_token['token']);
     }
 }

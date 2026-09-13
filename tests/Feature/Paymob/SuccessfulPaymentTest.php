@@ -64,7 +64,7 @@ class SuccessfulPaymentTest extends TestCase
 
         Http::assertSentInOrder([
             'https://accept.paymobsolutions.com/api/auth/tokens',
-            'https://accept.paymobsolutions.com/api/api/ecommerce/orders',
+            'https://accept.paymobsolutions.com/api/ecommerce/orders',
             'https://accept.paymobsolutions.com/api/acceptance/payment_keys',
         ]);
     }

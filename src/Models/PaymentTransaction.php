@@ -15,6 +15,8 @@ class PaymentTransaction extends Model
         'minor_amount',
         'remain_minor_amount',
         'currency',
+        'subscription_id',
+        'subscription_transaction_type',
         'status',
         'source',
         'source_subtype',
@@ -28,11 +30,6 @@ class PaymentTransaction extends Model
         });
     }
 
-    public function pounds(): float
-    {
-        return $this->minor_amount/100;
-    }
-
     public function customer(): BelongsTo
     {
         return $this->belongsTo(PaymentCustomer::class, 'customer_id');
@@ -41,5 +38,10 @@ class PaymentTransaction extends Model
     public function refundedPayments()
     {
         return $this->hasMany(RefundedPaymentTransaction::class, 'parent_transaction', 'gateway_reference');
+    }
+
+    public function subscription(): BelongsTo
+    {
+        return $this->belongsTo(Subscription::class, 'subscription_id');
     }
 }

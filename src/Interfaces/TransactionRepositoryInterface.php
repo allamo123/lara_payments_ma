@@ -19,7 +19,7 @@ interface TransactionRepositoryInterface
 
     public function LockUpdateTransactionByRefrence(string $ref, array $data): ?PaymentTransaction;
 
-    public function createOrUpdate(?int $id, array $data):void;
+    public function createOrUpdate(?int $id, array $data): PaymentTransaction;
 
     public function updateByOrderId(string $orderId, array $data): void;
 

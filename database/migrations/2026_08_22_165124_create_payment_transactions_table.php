@@ -34,6 +34,16 @@ return new class extends Migration
             
             $table->string('currency', 3);
 
+            $table->foreignId('subscription_id')
+                ->nullable()
+                ->constrained('subscriptions')
+                ->nullOnDelete();
+
+            $table->enum('subscription_transaction_type', [
+                'initial',
+                'renewal',
+            ])->nullable();
+
             $table->string('source');
             
             $table->string('source_subtype')->nullable();

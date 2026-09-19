@@ -23,6 +23,8 @@ abstract class TestCase extends OrchestraTestCase
             'PAYMOB_HMAC' => 'test-hmac',
             'PAYMOB_CURRENCY' => 'EGP',
             'PAYMOB_WALLET_INTEGRATION_ID' => 'test-wallet-integration-id',
+            'PAYMOB_SUBSCRIPTION_WEBHOOK_URL' => 'test-paymob-webhook',
+            'PAYMOB_MOTO_INTEGRATION_ID' => 'test-moto-id',
             'STRIPE_API_PUBLISHED_KEY' => 'test-stripe-published-key',
             'STRIPE_API_SECRET' => 'test-stripe-secret',
             'STRIPE_WEBHOOK_SECRET' => 'test-stripe-webhook-secret',

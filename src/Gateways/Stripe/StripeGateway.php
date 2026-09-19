@@ -160,7 +160,7 @@ class StripeGateway extends BaseGateway implements PaymentGatewayInterface
                     'minor_amount'       => $event['refund_amount'],
                     'currency'           => $event['refund_currency'],
                     'status'             => $this->mapStatus($event['refund_status'])->value,
-                    'meta_data'          => json_encode($event, JSON_PRETTY_PRINT),
+                    'meta_data'          => json_encode($event),
                 ]);
 
 

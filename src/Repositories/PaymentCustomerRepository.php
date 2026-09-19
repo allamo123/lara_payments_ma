@@ -20,6 +20,13 @@ class PaymentCustomerRepository
                     ->first();
     }
 
+    public function getCustomerByEmail(string $email): PaymentCustomer|null
+    {
+        return $this->customer->query()
+                    ->where('email', $email)
+                    ->first();
+    }
+
     public function createCustomer(array $data): PaymentCustomer
     {
         return $this->customer->create($data);

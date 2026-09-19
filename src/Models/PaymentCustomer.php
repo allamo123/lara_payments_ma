@@ -20,4 +20,14 @@ class PaymentCustomer extends Model
     {
         return $this->hasMany(PaymentTransaction::class, 'customer_id');
     }
+
+    public function cards(): HasMany
+    {
+        return $this->hasMany(CustomerCard::class, 'customer_id');
+    }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class, 'customer_id');
+    }
 }

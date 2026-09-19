@@ -16,10 +16,15 @@ final class PaymentTransactionDTO
         public readonly string $status,
         public readonly string $currency,
         public readonly array $metadata,
-        public readonly ?string $gatewayRefrence,
+        public readonly ?string $gatewayRefrence = null,
         public readonly ?string $orderId = null,
         public readonly ?string $source_subtype = null,
-    ) {}
+    ) {
+        if (!$gatewayName || $gatewayName === '') {
+            throw new InvalidArgumentException("Not valid gatway name");
+            
+        }
+    }
 
     public function toDatabase(): array
     {
@@ -33,7 +38,7 @@ final class PaymentTransactionDTO
             'gateway_reference' => $this->gatewayRefrence ? $this->gatewayRefrence : null,
             'status' => $this->status,
             'currency' => $this->currency,
-            'meta_data' => json_encode($this->metadata, JSON_PRETTY_PRINT)
+            'meta_data' => json_encode($this->metadata)
         ];
     }
 

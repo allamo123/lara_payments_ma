@@ -135,7 +135,7 @@ class PaymentTransactionDTOTest extends TestCase
         $this->assertSame($response['source'], $db_data['source']);
         $this->assertSame($response['source_subtype'], $db_data['source_subtype']);
         $this->assertSame($response['payment_status'], $db_data['status']);
-        $this->assertSame(json_encode($response, JSON_PRETTY_PRINT), $db_data['meta_data']);
+        $this->assertSame(json_encode($response), $db_data['meta_data']);
 
 
     }

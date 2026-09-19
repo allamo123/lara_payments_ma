@@ -4,9 +4,12 @@ namespace Ma\Payment\Gateways\Paymob;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Ma\Payment\DTOS\PaymentRequestDTO;
 use Ma\Payment\DTOS\PaymentTransactionDTO;
 use Ma\Payment\Enums\PaymentStatus;
+use Ma\Payment\Enums\SubscriptionStatus;
+use Ma\Payment\Enums\SubscriptionTransactionType;
 use Ma\Payment\Interfaces\PaymentGatewayInterface;
 use Ma\Payment\Interfaces\TransactionRepositoryInterface;
 use Ma\Payment\Gateways\BaseGateway;
@@ -17,22 +20,29 @@ use Ma\Payment\Exceptions\RefundAmountGreaterThanTransactionAmountException;
 use Ma\Payment\Exceptions\TransactionAlreadyProccessedException;
 use Ma\Payment\Exceptions\TransactionNotFoundException;
 use Ma\Payment\Exceptions\TransactionCannotProcessException;
-use Ma\Payment\Gateways\Paymob\Services\PaymobWebhookHandler;
+use Ma\Payment\Gateways\Paymob\Handlers\PaymobSubscriptionCallbackHandler;
+use Ma\Payment\Gateways\Paymob\Handlers\PaymobTransactionCallbackHandler;
+use Ma\Payment\Interfaces\SubscriptionInterface;
+use Ma\Payment\Interfaces\SubscrptionableInterface;
 use Ma\Payment\Repositories\PaymentCustomerRepository;
 use Ma\Payment\Services\CustomerSerivce;
 use Ma\Payment\ValueObjects\Money;
 use Ma\Payment\Repositories\RefundTransactionRepository;
+use Ma\Payment\Repositories\SubscriptionPlanRepository;
+use RuntimeException;
 
-
-class PaymobGateway extends BaseGateway implements PaymentGatewayInterface
+class PaymobGateway extends BaseGateway implements PaymentGatewayInterface, SubscrptionableInterface
 {
     public function __construct(
         private PaymobApiService $paymobApiService,
         protected TransactionRepositoryInterface $transactionRepository,
-        private PaymobWebhookHandler $paymobWebhookHandler,
+        private PaymobTransactionCallbackHandler $paymobCallbackHandler,
+        private PaymobSubscriptionCallbackHandler $paymobSubscriptionCallbackHandler,
         private PaymentCustomerRepository $customerRepository,
         protected CustomerSerivce $customerService,
-        protected RefundTransactionRepository $refundTransactionRepository,
+        private RefundTransactionRepository $refundTransactionRepository,
+        private SubscriptionPlanRepository $subscriptionPlan,
+        private PaymobSubscription $paymobSubscription,
     ) {
         $this->gateway_name = 'paymob';
         parent::__construct($customerService, $transactionRepository);
@@ -68,35 +78,129 @@ class PaymobGateway extends BaseGateway implements PaymentGatewayInterface
         return PaymentTransactionDTO::fromArray($apiResponse);
     }
     
-    public function verify(array|string $callbackResonse, ?string $signature = null): array
+    public function verify(array|string $processedTransaction, ?string $signature = null): array
     {
-        $this->paymobWebhookHandler->handle($callbackResonse);
+        if (is_string($processedTransaction)) {
+            $processedTransaction = json_decode($processedTransaction, true, 512, JSON_THROW_ON_ERROR);
+        }
 
-        $transaction = $this->transactionRepository->getTransactionByOrderId($callbackResonse['order']);
+        $webhook = isset($processedTransaction['intention']) 
+        ? $this->paymobSubscriptionCallbackHandler->handle($processedTransaction)
+        : $this->paymobCallbackHandler->handle($processedTransaction);
+
+        if ($webhook['type'] === 'TOKEN') {
+
+           $card = [
+                'gateway'         => 'paymob',
+                'gateway_card_id' => $webhook['data']['id'],
+                'token'           => $webhook['data']['token'],
+                'email'           => $webhook['data']['email'],
+                'brand'           => $webhook['data']['card_subtype'],
+                'last_four'       => substr($webhook['data']['masked_pan'], -4),
+                'expiry_month'    => $webhook['data']['expiry_month'],
+                'expiry_year'     => $webhook['data']['expiry_year'],
+                'cardholder_name' => $webhook['data']['cardholder_name'],
+                'metadata'        => json_encode($webhook['data']),
+            ];
+
+            $this->customerService->SaveNewCard($card);
+
+            return $card;
+        }
+
+        $ProccessedTransaction = $webhook['data']['transaction']['obj'];
+
+        $orderId = $ProccessedTransaction['order']['id'];
+
+        $transaction = $this->transactionRepository->getTransactionByOrderId($orderId);
+
+        $subscription = null;
+
+        #Verify & Trust subscription by callback
+        if ($webhook['source'] === 'subscription') {
+
+            foreach ([2, 4, 6, 8] as $delay) {
+
+                sleep($delay);
+
+                $subscription = $this->paymobApiService->findSubscriptionbyTransactionId($ProccessedTransaction['id']);
+               
+                if (!empty($subscription['results'])) {
+                    break;
+                }
+
+            }
+
+            if (empty($subscription['results'])) {
+                throw new RuntimeException('Subscription not found at Paymob');
+            }
+
+            if(!empty($subscription['results']))
+                $subscription = $subscription['results'][0];
+
+            if ((int) $subscription['initial_transaction'] !== (int) $ProccessedTransaction['id']) 
+            {
+                throw new RuntimeException(
+                    'Subscription does not belong to the callback transaction.'
+                );
+            }
+        }
+        #End of Verification & Trusting subscription by callback
 
         if (!$transaction) {
-            throw new TransactionNotFoundException($callbackResonse['order']);
+            throw new TransactionNotFoundException($orderId);
         }
 
         if ($this->mapStatus($transaction->status)->value !== 'pending') {
-            throw new TransactionAlreadyProccessedException($callbackResonse['order']);
+            throw new TransactionAlreadyProccessedException($orderId);
         }
 
-        $isSuccess = filter_var($callbackResonse['success'], FILTER_VALIDATE_BOOLEAN);
-       
-        $txn_data = [
-            'gateway_reference' => $callbackResonse['id'],
-            'status' => $isSuccess ? PaymentStatus::SUCCEEDED : PaymentStatus::FAILED,
-            'source_subtype' => strtolower($callbackResonse['source_data_sub_type']),
-        ];
+        DB::transaction(function () use ($ProccessedTransaction, $subscription, $transaction) {
 
-        DB::transaction(function () use ($callbackResonse, $txn_data) {
-            $this->transactionRepository->updateByOrderId($callbackResonse['order'], $txn_data);
+            $isSuccess = filter_var($ProccessedTransaction['success'], FILTER_VALIDATE_BOOLEAN);
+       
+            $txn_data = [
+                'gateway_reference' => $ProccessedTransaction['id'],
+                'status' => $isSuccess ? PaymentStatus::SUCCEEDED : PaymentStatus::FAILED,
+                'source_subtype' => strtolower($ProccessedTransaction['source_data']['sub_type']),
+            ];
+
+            if ($subscription) {
+
+                $localPlan = $this->subscriptionPlan->findLocalPlanByGatewayId($subscription['plan_id']);
+
+                $subscriptionData = [
+                    'gateway' => $transaction->gateway,
+                    'gateway_subscription_id' => $subscription['id'],
+                    'customer_id' => $transaction->customer_id,
+                    'plan_id' => $localPlan->id,
+                    'transaction_id' => $subscription['initial_transaction'],
+                    'next_billing' => $subscription['next_billing'],
+                    'starts_at' => $subscription['starts_at'],
+                    'ends_at' => $subscription['ends_at'],
+                    'reminder_date' => $subscription['reminder_date'],
+                    'status' => SubscriptionStatus::ACTIVE->value,
+                ];
+
+                $subscription = $this->customerService->subscribe(
+                    $subscription['client_info']['email'], 
+                    $subscriptionData
+                );
+
+                $this->paymobApiService->registeSubscriptionWebhook($subscription->gateway_subscription_id);
+
+                $txn_data['subscription_id'] = $subscription->id;
+                $txn_data['subscription_transaction_type'] = SubscriptionTransactionType::INITIAL->value;
+            }
+
+
+            $this->transactionRepository->updateByOrderId(
+                $ProccessedTransaction['order']['id'], $txn_data
+            );
         });
 
         return [
-            'payment_id' => $callbackResonse['order'],
-            'message' => $callbackResonse['data_message']
+            'order' => $ProccessedTransaction['order'],
         ];
     }
 
@@ -132,7 +236,7 @@ class PaymobGateway extends BaseGateway implements PaymentGatewayInterface
                     PaymentStatus::PENDING->value,
                 ],
                 true
-        )) {
+        ) && $transaction->source !== 'card_subscription') {
             throw new TransactionCannotProcessException($transaction->order_id);
         }
         
@@ -189,7 +293,7 @@ class PaymobGateway extends BaseGateway implements PaymentGatewayInterface
             'refund_type'       => $refund_type,
             'currency'          => $refund_res['currency'],
             'status'            => $this->mapStatus(strtolower($refund_data['migs_result']))->value,
-            'meta_data'         => json_encode($refund_data, JSON_PRETTY_PRINT)
+            'meta_data'         => json_encode($refund_data)
         ];
 
         $remainingAmount = $this->calculateRemainMinorAmount(
@@ -209,5 +313,10 @@ class PaymobGateway extends BaseGateway implements PaymentGatewayInterface
             $this->refundTransactionRepository->createRefundTransaction($refundTxnData);
         });
 
+    }
+
+    public function subscription(): SubscriptionInterface
+    {
+        return $this->paymobSubscription;
     }
 }

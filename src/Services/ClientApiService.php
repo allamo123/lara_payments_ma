@@ -20,6 +20,20 @@ class ClientApiService
         return $res;
     }
 
+    public function put(string $endpoint, array $body)
+    {
+        $res = Http::withOptions([
+            'verify' => false
+        ])
+        ->withHeaders(['content-type' => 'application/json'])
+        ->put($endpoint, $body)
+        ->json();
+
+        // dd($res);
+
+        return $res;
+    }
+
     public function postWithSecretKey( string $endpoint, array $body, string $secretKey): array 
     {
         return Http::withOptions([

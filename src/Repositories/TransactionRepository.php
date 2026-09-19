@@ -65,9 +65,9 @@ class TransactionRepository implements TransactionRepositoryInterface
         return $transaction;
     }
 
-    public function createOrUpdate(?int $id, array $data): void
+    public function createOrUpdate(?int $id, array $data): PaymentTransaction
     {
-        $this->transaction->updateOrCreate(
+        return $this->transaction->updateOrCreate(
             ['id' => $id],
             $data
         );

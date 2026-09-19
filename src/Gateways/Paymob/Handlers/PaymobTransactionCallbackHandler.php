@@ -1,11 +1,11 @@
 <?php
 
-namespace Ma\Payment\Gateways\Paymob\Services;
+namespace Ma\Payment\Gateways\Paymob\Handlers;
 
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
-final class PaymobWebhookHandler
+final class PaymobTransactionCallbackHandler
 {
     public function handle(array $proccessedData): array
     {

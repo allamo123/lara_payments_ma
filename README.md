@@ -9,11 +9,15 @@
 
 <p align="center">
     A unified Laravel payment package for integrating multiple payment gateways
-    through a consistent API.
+    through a consistent API, including <strong>Paymob subscriptions</strong>.
 </p>
 
 <p align="center">
     <a href="#documentation">Documentation</a>
+    &nbsp;&nbsp;•&nbsp;&nbsp;
+    <a href="#quick-start">Quick Start</a>
+    &nbsp;&nbsp;•&nbsp;&nbsp;
+    <a href="#version">Version</a>
     &nbsp;&nbsp;•&nbsp;&nbsp;
     <a href="#testing">Testing</a>
     &nbsp;&nbsp;•&nbsp;&nbsp;
@@ -24,2095 +28,263 @@
 
 ---
 
-## Documentation
+## What is this package?
 
-**ma-lara/payments** provides a unified API for integrating multiple payment gateways into Laravel applications.
+**ma-lara/payments** gives Laravel applications one API for multiple payment providers,
+plus a subscription API for Paymob:
 
-The package exposes common operations such as:
+```php
+use Ma\Payment\Facades\MaPayment;
 
-* `pay()`
-* `verify()`
-* `retryPayment()`
-* `refund()`
-* Transaction queries
+$payment = MaPayment::driver('paymob');
 
-Each gateway implements the package's gateway contract while keeping provider-specific API calls, authentication, response mapping, and webhook handling isolated inside the gateway implementation.
+// Payments
+$paylink = $payment->pay([...]);
+$payment->verify($request->all());
+$payment->refund($transactionId, 50);
 
-### Supported Gateways
+// Subscriptions
+$payment->subscription()->createPlan([...]);
+$result = $payment->subscription()->subscribe($plan, $customerData);
+$payment->subscription()->lifeCycle($request->all());
+```
 
-| Gateway | Card | Wallet | Retry | Refund | Webhook / Callback |
-| ------- | :--: | :----: | :---: | :----: | :----------------: |
-| Stripe  |   ✅  |    ❌   |   ✅   |    ✅   |      ✅ Signed      |
-| Paymob  |   ✅  |    ✅   |   ✅   |    ✅   |       ✅ HMAC       |
-
-### Important
-
-The package backend is **frontend-agnostic**.
-
-The package includes an optional Stripe Blade card component, but you can integrate the backend with:
-
-* Blade
-* React
-* Vue
-* Angular
-* Vanilla JavaScript
-* Mobile applications
-* Any frontend capable of communicating with your backend API
+Provider-specific API calls, authentication, response mapping, and callback handling stay
+isolated inside each gateway. The backend is **frontend-agnostic** — an optional Stripe
+Blade card component is included but never required.
 
 ---
 
-## Features
+## Capabilities
 
-* Unified payment gateway contract.
-* Runtime gateway selection through `driver()`.
-* Stripe card payments using PaymentIntents.
-* Paymob card payments using a hosted iframe.
-* Paymob mobile-wallet payments.
-* Payment retries.
-* Full and partial refunds.
-* Stripe signed webhook verification.
-* Paymob HMAC callback verification.
-* Local customer persistence.
-* Local transaction persistence.
-* Local refund persistence.
-* Normalized `PaymentStatus` enum.
-* Minor-unit monetary storage.
-* Raw gateway responses stored in `meta_data`.
-* Gateway-specific API services.
-* Gateway-specific webhook handlers.
-* Repository-based persistence.
-* DTOs and value objects for important boundaries.
-* Optional Stripe Blade card-payment component.
-* Extensible architecture for adding additional gateways.
+* Unified gateway contract with runtime driver selection (`MaPayment::driver(...)`).
+* Stripe card payments using PaymentIntents, signed webhooks, retries, refunds.
+* Paymob card payments (hosted iframe), mobile wallet payments, HMAC callbacks, retries,
+  refunds, and **subscriptions**.
+* Normalized `PaymentStatus` and `SubscriptionStatus` enums.
+* Local persistence of customers, transactions, refunds, saved card records, plans,
+  subscriptions, and webhook events.
+* Queued jobs for async refund updates and subscription lifecycle updates.
+* Extensible architecture for adding gateways and subscription implementations.
+
+**Not implemented:** capture, void, Stripe subscriptions, charging a stored card through
+the package API, and persisted recurring (renewal) transactions. See
+[1. Introduction](docs/01-introduction.md) for the full list.
 
 ---
 
-# Requirements
+## Supported gateways
 
-The package requirements are defined by `composer.json`.
+| Gateway | Card | Wallet | Retry | Refund | Webhook / Callback | Subscription |
+| ------- | :--: | :----: | :---: | :----: | :----------------: | :----------: |
+| Stripe  |  ✅  |   ❌   |  ✅   |   ✅   |     ✅ Signed      |      ❌      |
+| Paymob  |  ✅  |   ✅   |  ✅   |   ✅   |      ✅ HMAC       |      ✅      |
 
-| Requirement | Version             |
-| ----------- | ------------------- |
-| PHP         | `>=8.1`             |
-| Laravel     | `>=9.0`             |
-| JSON        | `ext-json`          |
-| cURL        | `ext-curl`          |
-| Stripe      | `stripe/stripe-php` |
+Subscriptions are exposed by gateways that implement `SubscrptionableInterface`:
 
-> The package targets the current development version documented by this README.
+```php
+MaPayment::driver('paymob')->subscription();   // ✅
+```
 
 ---
 
-# Installation
+## Requirements
 
-Install the package through Composer:
+| Requirement | Version            |
+| ----------- | ------------------ |
+| PHP         | `>=8.1`            |
+| Laravel     | `>=9.0 <14.0`      |
+| JSON        | `ext-json`         |
+| cURL        | `ext-curl`         |
+| Stripe SDK  | `stripe/stripe-php` |
+
+---
+
+## Installation
 
 ```bash
 composer require ma-lara/payments
-```
 
-Laravel package discovery automatically registers the package service provider and facade.
-
-### Publish Configuration
-
-```bash
 php artisan vendor:publish --tag=ma-payment-config
-```
-
-### Publish Views and Frontend Assets
-
-```bash
-php artisan vendor:publish --tag=ma-payment-views
-```
-
-### Publish Migration Files
-
-```bash
 php artisan vendor:publish --tag=ma-payment-migrations
-```
-
-### Run Migrations
-
-```bash
 php artisan migrate
 ```
 
-The package provides three main tables:
+Then set your provider credentials in `.env` and expose your own callback routes —
+the package does not register routes for you.
 
-| Table                           | Purpose                                              |
-| ------------------------------- | ---------------------------------------------------- |
-| `payment_customers`             | Maps application users to gateway customers          |
-| `payment_transactions`          | Stores payment attempts and their gateway references |
-| `refunded_payment_transactions` | Stores refund transactions                           |
+Full instructions, including the queue worker requirement and the subscription webhook
+URL: **[2. Installation](docs/02-installation.md)**.
 
 ---
 
-# Configuration
-
-The package configuration is available at:
-
-```text
-config/ma_payment_conf.php
-```
-
-The gateway registry is available at:
-
-```text
-config/ma_payment_drivers.php
-```
-
-## Environment Variables
-
-### Stripe
-
-```env
-STRIPE_API_SECRET=sk_...
-STRIPE_API_KEY=pk_...
-STRIPE_BASE_URL=https://api.stripe.com
-STRIPE_CURRENCY=USD
-STRIPE_WEBHOOK_SECRET=whsec_...
-```
-
-| Variable                | Purpose                       |
-| ----------------------- | ----------------------------- |
-| `STRIPE_API_SECRET`     | Stripe secret API key         |
-| `STRIPE_API_KEY`        | Stripe publishable key        |
-| `STRIPE_BASE_URL`       | Stripe API base URL           |
-| `STRIPE_CURRENCY`       | Default Stripe currency       |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-
-### Paymob
-
-```env
-PAYMOB_API_KEY=...
-PAYMOB_API_SECRET=...
-PAYMOB_INTEGRATION_ID=...
-PAYMOB_WALLET_INTEGRATION_ID=...
-PAYMOB_IFRAME_ID=...
-PAYMOB_HMAC=...
-PAYMOB_CURRENCY=EGP
-```
-
-| Variable                       | Purpose                               |
-| ------------------------------ | ------------------------------------- |
-| `PAYMOB_API_KEY`               | Paymob API key                        |
-| `PAYMOB_API_SECRET`            | Paymob API secret used where required |
-| `PAYMOB_INTEGRATION_ID`        | Card integration ID                   |
-| `PAYMOB_WALLET_INTEGRATION_ID` | Wallet integration ID                 |
-| `PAYMOB_IFRAME_ID`             | Paymob card iframe ID                 |
-| `PAYMOB_HMAC`                  | Callback HMAC secret                  |
-| `PAYMOB_CURRENCY`              | Default Paymob currency               |
-
-
----
-
-# Gateway Registry
-
-Gateways are registered through:
-
-```text
-config/ma_payment_drivers.php
-```
-
-Example:
-
-```php
-return [
-    'stripe' => \Ma\Payment\Gateways\Stripe\StripeGateway::class,
-    'paymob' => \Ma\Payment\Gateways\Paymob\PaymobGateway::class,
-];
-```
-
-The manager and factory use this registry to resolve the requested gateway.
-
----
-
-# Quick Start
-
-## Selecting a Gateway
-
-Use `Ma\Payment\Facades\MaPayment` to select a gateway:
+## Quick Start
 
 ```php
 use Ma\Payment\Facades\MaPayment;
 
-$gateway = MaPayment::driver('stripe');
-```
+Route::post('/pay', function (Illuminate\Http\Request $request) {
+    $paymob = MaPayment::driver('paymob');
 
-You can then call the common gateway operations:
+    $paylink = $paymob->pay([
+        'amount' => 150.50,          // major units
+        'currency' => 'EGP',
+        'customer' => [
+            'id' => auth()->id(),
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'email' => 'john@example.com',
+            'phone' => '01010101010',
+        ],
+        'source' => 'card',          // or 'wallet'
+    ]);
+
+    return redirect($paylink);
+});
+```
 
 ```php
-$gateway->pay(...);
-
-$gateway->verify(...);
-
-$gateway->retryPayment(...);
-
-$gateway->refund(...);
-```
-
-The same architecture is used for Paymob:
-
-```php
-$gateway = MaPayment::driver('paymob');
-
-```
-
----
-
-# Payment Data
-
-A payment request contains the payment amount, currency, customer information, and gateway-specific payment information.
-
-Example:
-
-```php
-$result = $gateway->pay([
-    'amount' => 150.50,
-    'currency' => 'USD',
-
-    'customer' => [
-        'id' => $user->id,
-        'first_name' => 'John',
-        'last_name' => 'Doe',
-        'email' => 'john@example.com',
-        'phone' => '+201000000000',
-    ],
-
-    'source' => 'card',
-
-    'payment_method' => [
-        'id' => 'pm_...',
-    ],
-]);
-```
-
-### Amounts
-
-Application-facing payment amounts use **major units**:
-
-```php
-150.50
-```
-
-The package converts monetary values to **minor units** for gateway communication and persistence:
-
-```text
-150.50 USD → 15050 cents
-```
-
-Transactions store amounts in minor units.
-
----
-
-# Payment Flow
-
-The general payment architecture is:
-
-```text
-Application
-    │
-    │ pay([...])
-    ▼
-MaPayment Facade
-    │
-    ▼
-PaymentGatewayManager
-    │
-    ▼
-PaymentGatewayFactory
-    │
-    ▼
-PaymentGatewayInterface
-    │
-    ├───────────────┐
-    ▼               ▼
- Stripe           Paymob
-    │               │
-    ▼               ▼
-Gateway API      Gateway API
-    │               │
-    └───────┬───────┘
-            ▼
-    PaymentTransaction
-            │
-            ▼
-     Webhook / Callback
-            │
-            ▼
-     PaymentStatus
-```
-
-The common payment workflow is implemented by `BaseGateway`.
-
-Conceptually:
-
-```text
-Payment Request
-      │
-      ▼
-Validate / Build DTO
-      │
-      ▼
-Get or create local customer
-      │
-      ▼
-Ensure gateway customer
-      │
-      ▼
-Call gateway API
-      │
-      ▼
-Build PaymentTransactionDTO
-      │
-      ▼
-Persist transaction
-      │
-      ▼
-Return payment result
-```
-
-Gateway implementations provide the provider-specific operations while the shared workflow remains in the base gateway.
-
----
-
-# Payment Status
-
-The package normalizes gateway-specific statuses into:
-
-```php
-Ma\Payment\Enums\PaymentStatus
-```
-
-Supported states include:
-
-```text
-pending
-processing
-succeeded
-failed
-canceled
-partially_refunded
-fully_refunded
-```
-
-Gateway-specific status values are mapped into these common states.
-
-For example:
-
-```text
-Stripe: succeeded
-Paymob: success
-Gateway-specific: approved
-
-        ↓
-
-PaymentStatus::SUCCEEDED
-```
-
-This allows the application to work with a common status model regardless of the selected gateway.
-
----
-
-# Stripe
-
-## Capabilities
-
-| Operation        | Supported |
-| ---------------- | :-------: |
-| Card payment     |     ✅     |
-| PaymentIntent    |     ✅     |
-| Gateway customer |     ✅     |
-| Retry payment    |     ✅     |
-| Full refund      |     ✅     |
-| Partial refund   |     ✅     |
-| Signed webhook   |     ✅     |
-| Wallet payment   |     ❌     |
-| Capture          |     ❌     |
-| Void             |     ❌     |
-
----
-
-## Stripe Card Payment
-
-Stripe card payments use Stripe PaymentIntents.
-
-The frontend creates a Stripe PaymentMethod and sends its ID to your backend.
-
-```php
-$result = $gateway->pay([
-    'amount' => 150.50,
-    'currency' => 'USD',
-
-    'customer' => [
-        'id' => $user->id,
-        'first_name' => 'John',
-        'last_name' => 'Doe',
-        'email' => 'john@example.com',
-        'phone' => '+201000000000',
-    ],
-
-    'source' => 'card',
-
-    'payment_method' => [
-        'id' => 'pm_...',
-    ],
-]);
-```
-
-The backend then:
-
-1. Validates the payment request.
-2. Creates or updates the local customer.
-3. Creates the Stripe customer when required.
-4. Creates the PaymentIntent.
-5. Confirms the PaymentIntent.
-6. Persists the local transaction.
-7. Returns the payment result.
-
----
-
-# Stripe Blade Card Component
-
-The package provides an optional Blade component for Stripe card payments.
-
-It is **not required** to use the Stripe gateway.
-
-View:
-
-```text
-ma-payment::Stripe.card
-```
-
-The component uses Stripe Elements and Stripe.js to collect the customer's card details.
-
-## Publishing the Component
-
-```bash
-php artisan vendor:publish --tag=ma-payment-views
-```
-
-The published JavaScript asset is available under:
-
-```text
-public/js/vendor/ma_payment/stripe/MaPaymentStripe.js
-```
-
-## Component Example
-
-```blade
- <x-ma-payment::Stripe.card
-      :amount="$amount"
-      :currency="$currency"
-      :customer="$customer"
-      :source="$source"
-      :success-url="$successUrl"
-      :payment-url="$paymentUrl ?? $retryUrl"
-      :publishable-key="$publishableKey"
-   />
-```
-
-### Component Properties
-
-| Property         | Required | Description                   |
-| ---------------- | :------: | ----------------------------- |
-| `publishableKey` |     ✅    | Stripe publishable key        |
-| `paymentUrl`     |     ✅    | Backend payment endpoint      |
-| `retryUrl`       | Optional | Backend retry endpoint        |
-| `successUrl`     |     ✅    | Successful payment redirect   |
-| `amount`         |     ✅    | Payment amount in major units |
-| `currency`       |     ✅    | Currency code                 |
-| `customer`       |     ✅    | Customer information          |
-| `source`         |     ✅    | Payment source                |
-
-The component:
-
-1. Mounts Stripe Elements.
-2. Collects card information.
-3. Creates a Stripe PaymentMethod.
-4. Sends the PaymentMethod ID to your backend.
-5. Displays payment errors.
-6. Redirects after successful payment.
-
----
-
-# Stripe With Other Frontends
-
-The Stripe Blade component is only a convenience feature.
-
-You can use the same backend API with:
-
-```text
-Blade
-React
-Vue
-Angular
-Vanilla JavaScript
-React Native
-Flutter
-Other
-```
-React Example
-```js
-import StripePayment from "../public/js/vendor/ma_payment/stripe/MaPaymentStripe.js";
-
-const Checkout = (data) => {
-
-    const payment = new StripePayment({
-        publishableKey: data.publishableKey,
-        paymentUrl: data.paymentUrl
-        successUrl: data.successUrl,
-        amount: data.amount
-        currency: data.currency,
-        customer: data.customer,
-        source: data.source,
-    });
-
-    const submit = async() => {
-        const { data, success, error } = await payment.pay();
-    }
-
-
-}
-
-```
-
-
-The frontend flow is:
-
-```text
-Frontend
-   │
-   │ MaPaymentStripe.js
-   ▼
-Create PaymentMethod
-   │
-   ▼
-Your Backend
-   │
-   │ pay()
-   ▼
-ma-lara/payments
-   │
-   ▼
-Stripe API
-```
-
-For example, a React or Vue application can create a Stripe PaymentMethod and send its ID to a Laravel endpoint that calls:
-
-```php
-$gateway->pay([
-    // ...
-    'payment_method' => [
-        'id' => $paymentMethodId,
-    ],
-]);
-```
-
-The package does not require the frontend to use Blade.
-
----
-
-# Stripe Retry
-
-Failed Stripe payments can be retried by re-confirming the existing PaymentIntent with a new PaymentMethod.
-
-```php
-$gateway->retryPayment(
-    $transactionId,
-    $paymentMethodId
-);
-```
-
-The retry operation remains gateway-specific while being exposed through the common gateway contract.
-
----
-
-# Paymob
-
-## Capabilities
-
-| Operation                  | Supported |
-| -------------------------- | :-------: |
-| Card payment               |     ✅     |
-| Hosted iframe              |     ✅     |
-| Mobile wallet              |     ✅     |
-| Retry payment              |     ✅     |
-| Full refund                |     ✅     |
-| Partial refund             |     ✅     |
-| HMAC callback verification |     ✅     |
-| Gateway transaction lookup |     ✅     |
-| Capture                    |     ❌     |
-| Void                       |     ❌     |
-
----
-
-# Paymob Card Payment
-
-Paymob card payments use a hosted checkout iframe.
-
-```php
-$paylink = $gateway->pay([
-    'amount' => 150.50,
-    'currency' => 'EGP',
-
-    'customer' => [
-        'id' => $user->id,
-        'first_name' => 'John',
-        'last_name' => 'Doe',
-        'email' => 'john@example.com',
-        'phone' => '01010101010',
-    ],
-
-    'source' => 'card',
-]);
-```
-
-The payment flow is:
-
-```text
-Application
-    │
-    ▼
-Paymob pay()
-    │
-    ├── Authentication
-    ├── Create order
-    ├── Create payment key
-    └── Generate iframe URL
-            │
-            ▼
-       Hosted iframe
-            │
-            ▼
-      Customer payment
-            │
-            ▼
-       Paymob callback
-            │
-            ▼
-          verify()
-```
-
-A new local transaction is initially stored as:
-
-```text
-pending
-```
-
-The callback later determines the final transaction status through paymob webhook handler.
-
----
-
-# Paymob Wallet Payment
-
-Wallet payments are selected using:
-
-```php
-'source' => 'wallet'
-```
-
-Example:
-
-```php
-$paylink = $gateway->pay([
-    'amount' => 200,
-    'currency' => 'EGP',
-
-    'customer' => [
-        'id' => $user->id,
-        'first_name' => 'John',
-        'last_name' => 'Doe',
-        'email' => 'john@example.com',
-        'phone' => '01010101010',
-    ],
-
-    'source' => 'wallet',
-]);
-```
-
-The customer's phone number is used as the wallet identifier.
-
-The Paymob wallet integration uses:
-
-```env
-PAYMOB_WALLET_INTEGRATION_ID=...
-```
-
-The resulting payment response contains the provider redirect URL.
-
-Your application can redirect the customer to that URL.
-
----
-
-# Paymob Callback Verification
-
-Paymob callbacks must be verified before updating a transaction.
-
-Example:
-
-```php
-$transaction = $gateway->verify(
-    $request->all()
-);
-```
-
-The verification flow is:
-
-```text
-Paymob Callback
-      │
-      ▼
-Verify HMAC
-      │
-      ├── Invalid → Reject
-      │
-      ▼
-Find Local Transaction
-      │
-      ▼
-Check Transaction State
-      │
-      ▼
-Update Transaction
-      │
-      ▼
-Return Verification Result
-```
-
-The callback signature is verified using the configured:
-
-```env
-PAYMOB_HMAC=...
-```
-
-An invalid signature must prevent the transaction from being processed.
-
-Applications should expose their own callback route and delegate the callback payload to the gateway.
-
----
-
-# Webhooks and Callbacks
-
-The package does **not** register application routes or controllers automatically.
-
-Your Laravel application owns the HTTP endpoint.
-
-The application then delegates the payload to the appropriate gateway handler.
-
----
-
-## Stripe Webhook
-
-Example:
-
-```php
-use Illuminate\Http\Request;
-use Ma\Payment\Facades\MaPayment;
-
-Route::post('/stripe/webhook', function (Request $request,) {
-    $gateway = MaPayment::driver('stripe');
-
+// Provider callback (your own route)
+Route::post('/paymob/callback', function (Illuminate\Http\Request $request) {
     return response()->json(
-        $gateway->verify(
-            $request->getContent(),
-            $request->header('Stripe-Signature')
-        )
+        MaPayment::driver('paymob')->verify($request->all())
     );
 });
 ```
 
-The handler verifies the Stripe signature using:
+More: **[3. Quick Start](docs/03-quick-start.md)** — including a minimal subscription
+example.
 
-```env
-STRIPE_WEBHOOK_SECRET=whsec_...
-```
+---
 
-Handled events include:
+## Documentation
 
-```text
-payment_intent.succeeded
-payment_intent.payment_failed
-payment_intent.canceled
-refund.created
-charge.refunded
-```
+The documentation is organized by what you are trying to do. Start here:
 
-Unhandled events return an appropriate unhandled result rather than being processed as payment events.
+| # | Chapter                                                       | You will find |
+| - | ------------------------------------------------------------- | ------------- |
+| 1 | [Introduction](docs/01-introduction.md)                         | What the package does, capabilities, supported gateways, requirements, what is intentionally not implemented |
+| 2 | [Installation](docs/02-installation.md)                         | Composer install, configuration, migrations, callback routes, subscription webhook URL, queue worker |
+| 3 | [Quick Start](docs/03-quick-start.md)                           | The minimum steps for a normal payment and for a Paymob subscription |
+| 4 | [Payments](docs/04-payments.md)                                 | Creating a Payment · Payment Response · Payment Status · Payment Callbacks / Webhooks · Retry Payment · Refunds · Transactions · Saved Cards |
+| 5 | [Subscriptions](docs/05-subscriptions.md)                       | Subscription Overview · Creating a Subscription Plan · Listing Plans · Updating a Plan · Suspending/Resuming a Plan · Creating a Subscription · Subscription Lifecycle · Updating a Subscription · Subscription Callbacks / Webhooks · Subscription Transactions |
+| 6 | [Gateway Architecture](docs/06-gateway-architecture.md)         | How gateways are resolved, the public contracts, and `$payment->subscription()` |
+| 7 | [Configuration](docs/07-configuration.md)                       | Every config file, environment variable, publish tag, and capability requirement |
+| 8 | [Troubleshooting](docs/08-troubleshooting.md)                   | Real errors thrown by the package and how to resolve them |
+| 9 | [Advanced / Developer Documentation](docs/09-advanced.md)       | Architecture, DTOs, value objects, repositories, webhook internals, testing, extending gateways, adding another subscription implementation |
 
-### Refund Webhook Race Condition and `UpdateRefundTransactionJob`
+A short answer for the most common questions:
 
-Stripe can deliver related webhook events independently. The package therefore cannot assume that the refund child transaction created from `refund.created` will always exist before the `charge.refunded` event attempts to update it:
+| Question                                    | Answer |
+| ------------------------------------------- | ------ |
+| How do I install the package?               | [2. Installation](docs/02-installation.md) |
+| How do I make a payment?                    | [3. Quick Start](docs/03-quick-start.md) → [4. Payments](docs/04-payments.md) |
+| How do I create a subscription plan?        | [5. Subscriptions → Creating a Subscription Plan](docs/05-subscriptions.md#creating-a-subscription-plan) |
+| How do I create a subscription?             | [5. Subscriptions → Creating a Subscription](docs/05-subscriptions.md#creating-a-subscription) |
+| How do I suspend or resume it?              | [5. Subscriptions → Subscription Lifecycle](docs/05-subscriptions.md#subscription-lifecycle) |
+| How do refunds, retries, and callbacks work? | [4. Payments](docs/04-payments.md) |
+| Where do I find implementation details?     | [9. Advanced / Developer Documentation](docs/09-advanced.md) |
 
-```text
-refund.created
-→ creates the refund transaction record
-
-charge.refunded
-→ updates the existing refund transaction
-```
-
-Because webhook processing can overlap, or events can arrive in an unexpected order, `charge.refunded` may attempt to update the refund transaction before `refund.created` has created (or committed) the corresponding record.
-
-#### How the Package Solves It
-
-When the `charge.refunded` branch of the Stripe webhook flow (`StripeGateway::verify()`) updates the parent transaction and a `refund_id` is present, the package dispatches `Ma\Payment\Jobs\UpdateRefundTransactionJob` to update the refund transaction record asynchronously:
+### Key subscription methods at a glance
 
 ```php
-UpdateRefundTransactionJob::dispatch($event['refund_id'], $event['status']->value);
+$payment = MaPayment::driver('paymob');
+
+$payment->subscription()->createPlan([...]);          // create a plan (local + gateway)
+$payment->subscription()->listPlans();                // local plans
+$payment->subscription()->findPlanByLocalId($id);     // local plan
+$payment->subscription()->updateSubscriptionPlan($gatewayPlanId, [...]);
+$payment->subscription()->suspendPlan($gatewayPlanId);
+$payment->subscription()->resumePlan($gatewayPlanId);
+
+$payment->subscription()->subscribe($plan, $customerData);   // initial payment
+$payment->subscription()->paginateLocalSubscrptions(15);     // local subscriptions
+$payment->subscription()->findSubscrptionByLocalId($id);     // local subscription
+$payment->subscription()->suspendSubscription($gatewaySubscriptionId);
+$payment->subscription()->resumeSubscription($gatewaySubscriptionId);
+$payment->subscription()->updateGatewaySubscription($gatewaySubscriptionId, [...]);
+$payment->subscription()->lifeCycle($request->all());        // lifecycle webhook
 ```
 
-The Job (`src/Jobs/UpdateRefundTransactionJob.php`) implements `Illuminate\Contracts\Queue\ShouldQueue` and works as follows:
+> Method names are reproduced exactly as implemented (`findSubscrptionByLocalId`,
+> `paginateLocalSubscrptions`). `$gatewayPlanId` / `$gatewaySubscriptionId` are Paymob
+> IDs; the `...ByLocalId` methods take local database IDs.
 
-* It attempts to find the refund transaction through `RefundTransactionRepository::getRefundTransaction()` (which also locks the row with `lockForUpdate()`).
-* If the refund transaction is temporarily unavailable (for example, because `refund.created` has not yet created it), the Job throws `Ma\Payment\Exceptions\RefundTransactionNotFoundException`.
-* Because the exception is thrown from a queued Job, Laravel retries the Job instead of permanently losing the update.
-* The Job controls its retry behavior with the actual configuration from the code:
-  * `$tries = 5`
-  * `backoff(): [2, 4, 5, 6, 7]` (seconds between attempts)
+---
 
-The retry delay gives the `refund.created` webhook time to create the refund transaction before the update is attempted again. Once the refund transaction exists, the Job updates its `refund_type` attribute and completes.
+## Version
 
-#### Flow
+These documents describe **v2.1.0**.
 
-Normal order:
+`v2.1.0` is a **backward-compatible feature release** that introduces Paymob subscription
+support. Existing payment behaviour, public methods, configuration keys, and previously
+existing database tables are unchanged.
 
-```text
-Stripe webhook
-→ webhook verification
-→ refund event handling
-→ dispatch UpdateRefundTransactionJob
-→ Laravel queue
-→ Job attempts update
-→ refund exists → update succeeds
-```
+Schema additions in this release:
 
-If the refund transaction does not yet exist:
+* new tables: `subscription_plans`, `subscriptions`, `subscription_webhook_events`,
+  `customer_cards`
+* two nullable columns on `payment_transactions`: `subscription_id`,
+  `subscription_transaction_type`
 
-```text
-Job
-→ RefundTransactionNotFoundException
-→ Laravel retry/backoff
-→ retry
-→ update succeeds once the refund exists
-```
+Only version references related to this release were updated. Historical release notes
+are not maintained in this repository.
 
-#### Queue Worker Requirement
+---
 
-Because `UpdateRefundTransactionJob` implements `ShouldQueue`, the consuming Laravel application **must have a queue worker running** for the Job to be processed:
+## Testing
 
 ```bash
-php artisan queue:work
+composer test
+composer test -- --testdox
 ```
 
-The package provides and dispatches the Job, but the Laravel application using the package is responsible for configuring its queue connection and running the queue worker.
-
-#### Package Installation Context
-
-`UpdateRefundTransactionJob` is included inside the package (under the `Ma\Payment\Jobs` namespace) and does **not** need to be published or copied into the consuming application's `app/Jobs` directory. The consuming application simply installs the package and runs its normal Laravel queue worker.
-
-### CSRF
-
-If the webhook endpoint is registered under a CSRF-protected route group, configure the endpoint appropriately for your application.
-
-For example:
-
-```php
-->withoutMiddleware([VerifyCsrfToken::class])
-```
-
-Only disable CSRF protection for the webhook endpoint where appropriate.
+* PHPUnit treats `tests/Unit` and `tests/Feature` as separate suites (`phpunit.xml`).
+* Tests run against SQLite `:memory:` using Orchestra Testbench
+  (`tests/TestCase.php` registers the provider and migrates the package migrations).
+* Existing tests cover the Paymob payment happy path, the failed-payment path, and the
+  payment DTOs. **Subscription behaviour is not covered by automated tests yet** —
+  see [9. Advanced → Testing](docs/09-advanced.md#testing).
+* CI runs the suite on a PHP/Laravel matrix (`.github/workflows/test.yaml`), and a local
+  `pre-push` hook (`.github/hooks/pre-push`) runs `composer test` before pushing.
 
 ---
 
-## Paymob Callback
-
-Paymob callbacks are handled by your application's callback route.
-
-Example:
-
-```php
-use Ma\Payment\Facades\MaPayment;
-
-Route::post('/paymob/callback', function (Request $request) {
-
-    $gateway = MaPayment::driver('paymob');
-
-    return response()->json(
-        $gateway->verify($request->all())
-    );
-});
-```
-
-The gateway verifies the HMAC before processing the transaction.
-
----
-
-# Transaction Processing
-
-Transactions are stored in:
-
-```text
-payment_transactions
-```
-
-A transaction contains information such as:
-
-* Local transaction ID
-* Customer ID
-* Gateway
-* Gateway reference
-* Amount
-* Remaining refundable amount
-* Currency
-* Status
-* Gateway metadata
-
-Gateway responses are stored in:
-
-```text
-meta_data
-```
-
-This allows applications to retain the original gateway response for reconciliation and debugging.
-
-## Listing & Filtering Transactions
-
-The package provides transaction listing and filtering through every gateway. Both `StripeGateway` and `PaymobGateway` implement these methods, which are declared on the `Ma\Payment\Interfaces\PaymentGatewayInterface` contract:
-
-```php
-public function getTransactions(?string $status = null): Illuminate\Database\Eloquent\Collection;
-
-public function getCustomerTransactions(int $userId, ?string $status = null): Illuminate\Database\Eloquent\Collection;
-```
-
-### Retrieving Transactions
-
-Retrieve transactions through a resolved gateway driver:
-
-```php
-use Ma\Payment\Facades\MaPayment;
-
-$gateway = MaPayment::driver('stripe'); // or 'paymob'
-
-// All transactions (no filter)
-$transactions = $gateway->getTransactions();
-
-// Only succeeded transactions
-$transactions = $gateway->getTransactions('succeeded');
-```
-
-### Filtering by Customer
-
-`getCustomerTransactions()` returns the transactions belonging to a specific application user (matched through the package's local `payment_customers` mapping):
-
-```php
-use Ma\Payment\Facades\MaPayment;
-
-$gateway = MaPayment::driver('paymob');
-
-// All transactions of the user
-$transactions = $gateway->getCustomerTransactions($userId);
-
-// Only refunded transactions of the user
-$transactions = $gateway->getCustomerTransactions($userId, 'fully_refunded');
-```
-
-If the user has no gateway customer mapping, a `Ma\Payment\Exceptions\CustomerNotFoundException` is thrown.
-
-### Available Filters
-
-The only filter parameter implemented is `status` (an optional `?string $status` applied as an exact-match `where('status', $status)` condition on the `payment_transactions` table).
-
-Supported status values are the values of the `Ma\Payment\Enums\PaymentStatus` enum:
-
-```text
-pending
-processing
-succeeded
-failed
-canceled
-fully_refunded
-partially_refunded
-```
-
-Passing a status that does not exist in the database simply returns an empty collection; the package does not validate the status value against the enum.
-
-> **Note:** Filters by gateway, date range, order ID, or gateway reference are **not** exposed through `getTransactions()` / `getCustomerTransactions()`. (Repository lookup helpers such as `getTransactionByRef()`, `getTransactionByOrderId()`, and `getTransactionByGateway()` exist for internal webhook/callback processing, but they are single-record lookups and are not part of the public listing API.)
-
-### Filtering by Multiple Criteria
-
-Combining multiple filters is not supported by the listing methods — the only supported parameter is the single optional `status` filter. To filter by multiple criteria, retrieve the collection and narrow it in your application:
-
-```php
-$transactions = $gateway
-    ->getCustomerTransactions($userId, 'succeeded')
-    ->filter(fn ($t) => $t->gateway === 'stripe');
-```
-
-### Returned Structure
-
-Both methods return an `Illuminate\Database\Eloquent\Collection` of `Ma\Payment\Models\PaymentTransaction` models. **No pagination is implemented** — the underlying query uses `->get()`, so the full result set is loaded.
-
-Each model exposes the following attributes (the model's `$fillable` fields):
-
-| Field                 | Description                                            |
-| --------------------- | ------------------------------------------------------ |
-| `gateway`             | Gateway name (`stripe`, `paymob`)                       |
-| `order_id`            | Gateway order identifier (where applicable)            |
-| `customer_id`         | Local package customer ID                              |
-| `gateway_reference`   | Gateway transaction reference                          |
-| `minor_amount`        | Original amount in minor units (e.g., cents)           |
-| `remain_minor_amount` | Remaining refundable amount in minor units             |
-| `currency`            | Transaction currency                                   |
-| `status`              | Payment status (see `PaymentStatus` values above)      |
-| `source`              | Payment source                                         |
-| `source_subtype`      | Payment source subtype (e.g., card brand)              |
-| `meta_data`           | Raw gateway response                                   |
-
-The model also provides helpers and relations:
-
-* `pounds(): float` — converts `minor_amount` to major units.
-* `customer()` — belongs-to relation to `Ma\Payment\Models\PaymentCustomer`.
-* `refundedPayments()` — has-many relation to `Ma\Payment\Models\RefundedPaymentTransaction`.
-
-Example:
-
-```php
-use Ma\Payment\Facades\MaPayment;
-
-$gateway = MaPayment::driver('stripe');
-
-foreach ($gateway->getCustomerTransactions(auth()->id(), 'succeeded') as $transaction) {
-    $transaction->gateway_reference; // Stripe PaymentIntent ID
-    $transaction->minor_amount;      // e.g. 15050
-    $transaction->pounds();          // 150.5
-    $transaction->status;            // 'succeeded'
-    $transaction->refundedPayments;  // related refund records
-}
-```
-
----
-
-# Refunds
-
-Both Stripe and Paymob expose refunds through:
-
-```php
-$gateway->refund($transactionId, $amount);
-```
-
-Example:
-
-```php
-$gateway->refund($transactionId, 50);
-```
-
-The amount is provided in **major units**.
-
-For example:
-
-```text
-Transaction: $150.50
-Refund:      $50.00
-Remaining:   $100.50
-```
-
-The package prevents refunds that exceed the remaining refundable amount.
-
-### Refund Rules
-
-The package validates:
-
-1. The transaction exists.
-2. The requested refund does not exceed the remaining amount.
-3. The gateway transaction reference matches the local transaction.
-4. The refund is persisted successfully.
-5. The remaining refundable amount is updated.
-
-Refund records are stored in:
-
-```text
-refunded_payment_transactions
-```
-
----
-
-# Partial Refunds
-
-Partial refunds can be performed multiple times until the remaining amount reaches zero.
-
-Example:
-
-```text
-Original transaction: $100
-
-Refund 1: $30
-Remaining: $70
-
-Refund 2: $20
-Remaining: $50
-
-Refund 3: $50
-Remaining: $0
-```
-
-The transaction status changes from:
-
-```text
-succeeded
-```
-
-to:
-
-```text
-partially_refunded
-```
-
-and finally:
-
-```text
-fully_refunded
-```
-
----
-
-# Capture
-
-Capture is currently **not supported**.
-
-There is no capture operation in:
-
-```text
-PaymentGatewayInterface
-BaseGateway
-StripeGateway
-PaymobGateway
-```
-
-Stripe PaymentIntents used by the package are confirmed using the configured payment flow rather than exposing a separate authorization/capture operation.
-
----
-
-# Void
-
-Void is currently **not supported**.
-
-The package does not expose an authorization-only → void lifecycle.
-
-Paymob refunds are treated as refunds rather than as a separate void operation.
-
----
-
-# Retry Payments
-
-Retry behavior is gateway-specific but exposed through the common API:
-
-```php
-$gateway->retryPayment($transactionId);
-```
-
-### Stripe
-
-Stripe retries the PaymentIntent using a new PaymentMethod.
-
-### Paymob
-
-Paymob creates a new payment attempt and returns a new payment link for the faild local transaction.
-
-Retry operations should only be allowed for transaction states supported by the gateway implementation.
-
----
-
-# Gateway Support Matrix
-
-| Capability                 |      Stripe      |     Paymob    |
-| -------------------------- | :--------------: | :-----------: |
-| Card payment               |         ✅        |       ✅       |
-| Wallet payment             |         ❌        |       ✅       |
-| Retry payment              |         ✅        |       ✅       |
-| Full refund                |         ✅        |       ✅       |
-| Partial refund             |         ✅        |       ✅       |
-| Capture                    |         ❌        |       ❌       |
-| Void                       |         ❌        |       ❌       |
-| Webhook / callback         |         ✅        |       ✅       |
-| Signature verification     | Stripe Signature |      HMAC     |
-| Gateway transaction lookup |      Limited     |       ✅       |
-| Hosted card UI             |  Blade component | Paymob iframe |
-
----
-
-# Error Handling
-
-Package exceptions are located under:
-
-```text
-Ma\Payment\Exceptions
-```
-
-Common exceptions include:
-
-| Exception                                             | Purpose                                              |
-| ----------------------------------------------------- | ---------------------------------------------------- |
-| `MissingPaymentInfoException`                         | Required payment information is missing              |
-| `CustomerNotFoundException`                           | Customer cannot be found                             |
-| `TransactionNotFoundException`                        | Transaction cannot be found                          |
-| `TransactionAlreadyProccessedException`               | Transaction has already been processed               |
-| `TransactionCannotProcessException`                   | Transaction cannot be processed in its current state |
-| `TransactionFailedException`                          | Payment failed                                       |
-| `GatewayTxnIdAndLocalTxnIdNotSameException`           | Gateway/local reference mismatch                     |
-| `GatewatTxnOrderIdAndLocalTxnOrderIdNotSameException` | Gateway/local order mismatch                         |
-| `RefundAmountGreaterThanTransactionAmountException`   | Refund exceeds the remaining amount                  |
-| `InvalidWebhookSignatureException`                    | Webhook/callback signature is invalid                |
-
-Example:
-
-```php
-use Ma\Payment\Exceptions\RefundAmountGreaterThanTransactionAmountException;
-
-try {
-    $gateway->refund($transactionId, 999999);
-} catch (RefundAmountGreaterThanTransactionAmountException $e) {
-    // Handle invalid refund amount.
-}
-```
-
-Stripe-specific SDK exceptions may also be exposed when the Stripe API rejects a request.
-
-For example:
-
-```php
-use Stripe\Exception\CardException;
-```
-
----
-
-# Frontend Integration
-
-The package does not require a specific frontend framework.
-
-## Stripe
-
-```text
-Blade
-React
-Vue
-Angular
-Vanilla JS
-Mobile
-Other frontend
-```
-
-The frontend creates the Stripe PaymentMethod and sends the ID to your backend.
-
-```text
-Frontend
-   │
-   │ MaPaymentStripe.js
-   ▼
-PaymentMethod
-   │
-   ▼
-Laravel Endpoint
-   │
-   ▼
-$gateway->pay()
-   │
-   ▼
-Stripe
-```
-
-## Paymob
-
-Paymob provides the payment interface through the provider:
-
-```text
-Card
-  ↓
-Hosted iframe
-
-Wallet
-  ↓
-Provider redirect URL
-```
-
-Your application only needs to redirect or embed the returned payment URL.
-
----
-
-# Architecture
-
-The package uses a layered and extensible gateway architecture.
-
-```text
-Application
-     │
-     ▼
-MaPayment Facade
-     │
-     ▼
-PaymentGatewayManager
-     │
-     ▼
-PaymentGatewayFactory
-     │
-     ▼
-PaymentGatewayInterface
-     │
-     ├───────────────┐
-     ▼               ▼
-StripeGateway   PaymobGateway
-     │               │
-     ▼               ▼
-StripeApiService PaymobApiService
-     │               │
-     ▼               ▼
-Stripe API       Paymob API
-```
-
-The shared payment workflow is implemented by:
-
-```text
-BaseGateway
-```
-
----
-
-# Design Patterns
-
-The package uses several established design patterns.
-
-### Facade
-
-```text
-MaPayment
-```
-
-Provides a convenient entry point for the package.
-
-### Factory
-
-```text
-PaymentGatewayFactory
-```
-
-Creates gateway implementations from the driver registry.
-
-### Strategy
-
-```text
-PaymentGatewayInterface
-```
-
-Allows Stripe, Paymob, and future gateways to be interchangeable.
-
-### Template Method
-
-```text
-BaseGateway::executePayment()
-```
-
-Defines the shared payment workflow while allowing gateways to implement gateway-specific operations.
-
-### Repository
-
-Repositories isolate persistence logic from gateway logic.
-
-Examples:
-
-```text
-TransactionRepository
-PaymentCustomerRepository
-RefundTransactionRepository
-```
-
-### DTO
-
-DTOs define structured boundaries between application, gateway, and persistence layers.
-
-Examples:
-
-```text
-PaymentRequestDTO
-PaymentTransactionDTO
-```
-
-### Value Objects
-
-The package uses value objects for validated primitives such as:
-
-```text
-Money
-UserEmail
-```
-
----
-
-# Core Components
-
-## PaymentGatewayManager
-
-Responsible for selecting a gateway driver.
-
-```php
-$manager->driver('stripe');
-$manager->driver('paymob');
-```
-
----
-
-## PaymentGatewayFactory
-
-Responsible for resolving a configured gateway implementation.
-
-The factory reads:
-
-```text
-config/ma-drivers.php
-```
-
-and resolves the gateway through Laravel's service container.
-
----
-
-## PaymentGatewayInterface
-
-The gateway contract defines the common gateway API.
-
-Typical operations include:
-
-```text
-pay()
-verify()
-getTransactions()
-getCustomerTransactions()
-getGatewayTransactionByOrderId()
-retryPayment()
-refund()
-```
-
-Gateway implementations may support different capabilities while maintaining the common contract.
-
----
-
-## BaseGateway
-
-`BaseGateway` contains the shared payment orchestration.
-
-The main payment workflow is implemented by:
-
-```php
-executePayment()
-```
-
-The method coordinates:
-
-```text
-PaymentRequestDTO
-      ↓
-Customer handling
-      ↓
-Gateway customer handling
-      ↓
-Gateway API request
-      ↓
-PaymentTransactionDTO
-      ↓
-TransactionRepository
-```
-
-Gateway-specific classes should not duplicate this common workflow.
-
----
-
-# Data Transfer Objects
-
-## PaymentRequestDTO
-
-Represents validated payment input.
-
-It sits at the boundary between:
-
-```text
-Application → Package
-```
-
-It handles concepts such as:
-
-* Amount
-* Currency
-* Customer
-* Source
-* Payment method
-
----
-
-## PaymentTransactionDTO
-
-Represents the data required to persist a payment transaction.
-
-It sits at the boundary between:
-
-```text
-Gateway → Persistence
-```
-
-Gateway implementations map provider responses into this DTO before passing the data to the repository.
-
----
-
-# Value Objects
-
-## Money
-
-Represents monetary values and provides controlled conversion between major and minor units.
-
-Example:
-
-```text
-150.50
-   ↓
-15050 minor units
-```
-
-Financial amounts should be persisted using integer minor units rather than floating-point database values.
-
-## UserEmail
-
-Represents a validated customer email address.
-
----
-
-# Repositories
-
-The package uses repositories to isolate database persistence.
-
-### TransactionRepository
-
-Handles payment transaction persistence and queries.
-
-### PaymentCustomerRepository
-
-Handles gateway customer mappings.
-
-### RefundTransactionRepository
-
-Handles refund transaction persistence.
-
-Database operations involving concurrent transaction updates use appropriate row locking where required.
-
----
-
-# Database Relationships
-
-The main relationships are:
-
-```text
-users
-  │
-  │ user_id
-  ▼
-payment_customers
-  │
-  │ customer_id
-  ▼
-payment_transactions
-  │
-  │ gateway_reference
-  ▼
-refunded_payment_transactions
-```
-
-A customer can have multiple payment transactions.
-
-A payment transaction can have multiple refund records.
-
----
-
-# Adding a New Gateway
-
-Adding a new gateway should not require modifying the generic payment workflow.
-
-For example, to add a `Tap` gateway:
-
-```text
-src/
-└── Gateways/
-    └── Tap/
-        ├── TapGateway.php
-        └── Services/
-            ├── TapApiService.php
-            └── TapWebhookHandler.php
-```
-
-## 1. Create the Gateway
-
-```php
-class TapGateway extends BaseGateway
-    implements PaymentGatewayInterface
-{
-    // ...
-}
-```
-
-## 2. Inject the Gateway API Service
-
-```php
-public function __construct(
-    CustomerSerivce $customerService,
-    TransactionRepositoryInterface $transactionRepository,
-    private TapApiService $apiService,
-) {
-    parent::__construct(
-        $customerService,
-        $transactionRepository
-    );
-
-    $this->gateway_name = 'tap';
-}
-```
-
-## 3. Implement the Gateway API Call
-
-```php
-protected function sendPaymentRequest(
-    PaymentRequestDTO $dto
-): array {
-    return $this->apiService->charge($dto);
-}
-```
-
-## 4. Map the Gateway Response
-
-Build a:
-
-```php
-PaymentTransactionDTO
-```
-
-from the provider response.
-
-Gateway-specific statuses should be normalized through the package status mapping.
-
-## 5. Register the Driver
-
-Add the gateway to:
-
-```text
-config/ma-drivers.php
-```
-
-```php
-return [
-    'stripe' => \Ma\Payment\Gateways\Stripe\StripeGateway::class,
-    'paymob' => \Ma\Payment\Gateways\Paymob\PaymobGateway::class,
-    'tap'    => \Ma\Payment\Gateways\Tap\TapGateway::class,
-];
-```
-
-The manager and factory do not need gateway-specific changes.
-
-## 6. Add Configuration
-
-Add provider credentials and gateway-specific configuration to:
-
-```text
-config/ma-payment.php
-```
-
-Use environment variables for secrets and credentials.
-
-## 7. Add Webhook Handling
-
-If the gateway supports webhooks:
-
-```text
-TapWebhookHandler
-```
-
-should be responsible for:
-
-1. Signature verification.
-2. Event parsing.
-3. Event identification.
-4. Transaction lookup.
-5. Status mapping.
-6. Safe transaction updates.
-
-## 8. Add Tests
-
-A new gateway should have tests covering:
-
-* Successful payment.
-* Failed payment.
-* Invalid payment data.
-* Verification.
-* Invalid signature.
-* Duplicate callback.
-* Refund.
-* Partial refund.
-* Over-refund.
-* Gateway-reference mismatch.
-* Retry where supported.
-
-## 9. Update Documentation
-
-Add the gateway to:
-
-* Supported Gateways.
-* Gateway Support Matrix.
-* Gateway-specific documentation.
-* Configuration documentation.
-
----
-
-# Gateway Implementation Rules
-
-When implementing a new gateway:
-
-### Do
-
-* Extend `BaseGateway`.
-* Implement `PaymentGatewayInterface`.
-* Keep API communication inside a gateway-specific API service.
-* Keep webhook parsing inside a gateway-specific webhook handler.
-* Reuse the existing repositories.
-* Reuse `PaymentRequestDTO` where possible.
-* Build `PaymentTransactionDTO` for persistence.
-* Normalize gateway statuses.
-* Store monetary values in minor units.
-* Add automated tests.
-
-### Do Not
-
-* Duplicate `executePayment()`.
-* Put gateway API calls inside repositories.
-* Put gateway-specific API logic in `BaseGateway`.
-* Modify generic payment logic for every new gateway.
-* Store secrets directly in source code.
-* Silently pretend unsupported operations are supported.
-
----
-
-# Testing
-
-The package is prepared for automated testing through PHPUnit and Composer. The complete testing infrastructure — the test runner, the Composer command, a local pre-push protection hook, and a GitHub Actions CI workflow — is already configured in this repository. However, **the actual test cases have not been implemented yet**, so no automated test coverage currently exists.
-
-## Automated Testing Infrastructure
-
-### 1. PHPUnit
-
-* PHPUnit is configured as a development dependency (`phpunit/phpunit: ^10.0` in `require-dev`).
-* `composer test` is the standard command for running the test suite (it invokes `phpunit`).
-* `phpunit.xml` defines two test suites: `Unit` (`tests/Unit`) and `Feature` (`tests/Feature`).
-* Test classes are autoloaded through the `Tests\` PSR-4 mapping (`autoload-dev` in `composer.json`).
-
-> **Note:** These suites are currently empty. The presence of this configuration does **not** imply existing test coverage.
-
-### 2. Local Pre-Push Protection
-
-A Git `pre-push` hook is provided in the repository at:
-
-```text
-.github/hooks/pre-push
-```
-
-The hook performs the following on every push:
-
-1. Runs `composer test`.
-2. If the test command fails (non-zero exit code), the push is **rejected**.
-3. If the test command succeeds, the push proceeds.
-
-This is a *preventive development workflow* mechanism. It guarantees that pushes are only made after the test command passes locally. It does **not** represent existing test coverage — the hook simply executes whatever the test suite contains at the time.
-
-### 3. GitHub Actions CI
-
-A GitHub Actions workflow is configured at:
-
-```text
-.github/workflows/test.yaml
-```
-
-It automatically executes the test command (`composer test`) on:
-
-* Pushes to the `main` branch.
-* Pull Requests targeting the `main` branch.
-
-The workflow runs on `ubuntu-latest` and uses a **version matrix** to validate package compatibility across the supported Laravel/PHP combinations:
-
-| PHP   | Laravel |
-| ----- | ------- |
-| 8.1   | 9.*     |
-| 8.2   | 10.*    |
-| 8.2   | 11.*    |
-| 8.2   | 12.*    |
-| 8.3   | 13.*    |
-
-Testing multiple Laravel versions ensures the package works across all Laravel versions it claims to support, rather than only the one used during development. The matrix is configured with `fail-fast: false`, so all combinations run even if one fails; however, **a failed matrix job causes the overall CI workflow to fail**, surfacing incompatibilities in the Checks tab.
-
-Each matrix job installs the matrix-specific Laravel version, installs dependencies, and runs the test suite.
-
-### 4. Pull Request / Branch Protection
-
-On the GitHub side, Pull Requests targeting a protected branch can be combined with **required status checks**:
-
-* The CI workflow runs automatically for every Pull Request.
-* The branch is configured (in the repository settings) to require the CI check, a Pull Request **cannot be merged** while the CI workflow is failing.
-* Failed required checks block the merge regardless of approvals.
-
-This provides a second layer of protection that remains effective even if someone bypasses the local `pre-push` hook (for example, by pushing with `--no-verify` or pushing from a machine where the hook is not activated).
-
-### 5. Protection Flow
-
-```text
-Developer:
-pre-push hook → test command → push allowed/rejected
-
-GitHub:
-Pull Request → GitHub Actions → required checks → merge allowed/rejected
-```
-
-### 6. Current Testing Status
-
-| Component                          | Status                          |
-| ---------------------------------- | ------------------------------- |
-| Testing infrastructure             | Configured                      |
-| PHPUnit                            | Configured                      |
-| Composer `test` command            | Configured                      |
-| Local `pre-push` hook              | Configured                      |
-| GitHub Actions CI                  | Configured                      |
-| Pull Request / branch protection   | Configured                      |
-| Test cases                         | **Not implemented yet**         |
-
----
-
-## What Should Be Tested?
-
-### Payment
-
-Test:
-
-* Successful payment.
-* Failed payment.
-* Invalid payment data.
-* Customer creation/update.
-* Transaction persistence.
-* Gateway response mapping.
-* Payment status mapping.
-
-### Webhooks and Callbacks
-
-Test:
-
-* Valid signature.
-* Invalid signature.
-* Missing signature.
-* Tampered payload.
-* Unknown transaction.
-* Already processed transaction.
-* Supported events.
-* Unsupported events.
-
-For Stripe, test every event explicitly handled by the package.
-
-For Paymob, test both valid and invalid HMAC callbacks.
-
-### Refunds
-
-Test:
-
-* Full refund.
-* Partial refund.
-* Multiple partial refunds.
-* Over-refund rejection.
-* Unknown transaction.
-* Gateway/local reference mismatch.
-* Correct remaining amount.
-* Correct final transaction status.
-
-### Retry
-
-Test:
-
-* Valid retry.
-* Retry of failed transaction.
-* Retry of pending transaction where supported.
-* Retry of an already completed transaction.
-* Gateway API failure.
-
----
-
-
----
-
-# Contributing
+## Contributing
 
 Contributions are welcome.
 
 When adding or modifying functionality:
 
-1. Follow the existing architecture.
-2. Keep gateway-specific code inside its gateway directory.
-3. Avoid changing the generic payment workflow unnecessarily.
-4. Add or update tests.
-5. Run the complete test suite.
-6. Update the documentation.
-7. Update the gateway support matrix when capabilities change.
-8. Preserve backward compatibility.
+1. follow the existing architecture;
+2. keep gateway-specific code inside its gateway directory;
+3. avoid changing the shared payment workflow unnecessarily;
+4. add or update tests and run `composer test`;
+5. update the [documentation](docs/README.md) and the capability tables;
+6. preserve backward compatibility.
 
 ---
 
-# Project Structure
+## Security
 
-A simplified package structure:
-
-``` text
-lara_payments_ma/
-├── LICENSE
-├── README.md
-├── composer.json
-├── composer.lock
-├── phpunit.xml                             # PHPUnit configuration (Unit / Feature suites)
-│
-├── .github/
-│   ├── hooks/
-│   │   └── pre-push                        # local pre-push hook: runs composer test before pushing
-│   └── workflows/
-│       └── test.yaml                       # CI workflow: PHP/Laravel version matrix test runner
-│
-├── config/
-│   ├── ma_payment_drivers.php              # gateway driver registry
-│   └── ma_payment_conf.php              # main package config
-│
-├── database/
-│   └── migrations/
-│       ├── 2026_08_21_154005_create_payment_customers_table.php
-│       ├── 2026_08_22_165124_create_payment_transactions_table.php
-│       └── 2026_08_24_160438_create_refunded_payment_transactions_table.php
-│
-├── resources/
-│   ├── js/
-│   │   └── stripe/
-│   │       └── MaPaymentStripe.js  # frontend Stripe integration JS
-│   └── views/
-│       ├── Stripe/
-│       │   └── card.blade.php              # Stripe card payment view
-│
-└── src/
-    ├── MaPaymentServiceProvider.php        # package service provider (bindings, migrations, views, lang, publishes)
-    ├── PaymentGatewayManager.php           # resolves the active gateway driver
-    │
-    ├── DTOS/
-    │   ├── PaymentRequestDTO.php           # incoming payment request data
-    │   └── PaymentTransactionDTO.php       # transaction data transfer object
-    │
-    ├── Enums/
-    │   └── PaymentStatus.php               # payment status enum
-    │
-    ├── Exceptions/
-    │   ├── CustomerNotFoundException.php
-    │   ├── GatewatTxnOrderIdAndLocalTxnOrderIdNotSameException.php   # (typo: "Gatewat")
-    │   ├── GatewayTxnIdAndLocalTxnIdNotSameException.php
-    │   ├── MissingPaymentInfoException.php
-    │   ├── RefundAmountGreaterThanTransactionAmountException.php
-    │   ├── RefundTransactionNotFoundException.php
-    │   ├── TransactionAlreadyProccessedException.php                # (typo: "Proccessed")
-    │   ├── TransactionCannotProcessException.php
-    │   ├── TransactionFailedException.php
-    │   └── TransactionNotFoundException.php
-    │
-    ├── Facades/
-    │   └── MaPayment.php                   # facade: MaPayment::gateway(...)
-    │
-    ├── Jobs/
-    │   └── UpdateRefundTransactionJob.php  # queued Job: retries refund transaction updates (Stripe webhook race condition)
-    │
-    ├── Factories/
-    │   └── PaymentGatewayFactory.php       # builds gateway instances
-    │
-    ├── Gateways/
-    │   ├── BaseGateway.php                 # shared gateway logic
-    │   ├── Paymob/
-    │   │   ├── PaymobGateway.php
-    │   │   └── Services/
-    │   │       ├── PaymobApiService.php        # Paymob HTTP API calls
-    │   │       └── PaymobWebhookHandler.php    # Paymob webhook verification/handling
-    │   └── Stripe/
-    │       ├── StripeGateway.php
-    │       └── Services/
-    │           ├── StripeApiService.php        # Stripe API calls
-    │           └── StripeWebhookHandler.php    # Stripe webhook handling
-    │
-    ├── Interfaces/
-    │   ├── PaymentGatewayInterface.php             # contract all gateways implement
-    │   ├── TransactionRepositoryInterface.php      # transaction persistence contract
-    │   └── ViewablePaymentGatewayInterface.php     # gateways that render their own view
-    │
-    ├── Models/
-    │   ├── PaymentCustomer.php
-    │   ├── PaymentTransaction.php
-    │   └── RefundedPaymentTransaction.php
-    │
-    ├── Repositories/
-    │   ├── PaymentCustomerRepository.php
-    │   ├── RefundTransactionRepository.php
-    │   └── TransactionRepository.php
-    │
-    ├── Services/
-    │   ├── ClientApiService.php            # outbound API client helper
-    │   ├── CustomerSerivce.php             # (typo in filename: "Serivce")
-    │   └── PaymentTransaction.php          # transaction orchestration service
-    │
-    └── ValueObjects/
-        ├── Money.php
-        └── UserEmail.php
-```
-
----
-
-# Architecture Principles
-
-The package follows several important principles:
-
-### Single Responsibility
-
-Different responsibilities are separated:
-
-- Gateway
-- API Service
-- Webhook Handler
-- Repository
-- DTO
-- Value Object
-
-### Open/Closed Principle
-
-A new gateway can be added without changing the generic payment workflow.
-
-### Liskov Substitution
-
-Gateway implementations follow the common gateway contract.
-
-### Dependency Inversion
-
-Infrastructure dependencies are injected through abstractions where appropriate.
-
-### Separation of Concerns
-
-Gateway-specific API behavior remains isolated from:
-
-* Persistence.
-* Generic payment orchestration.
-* DTO definitions.
-* Application integration.
+* Never commit provider secrets — use `.env` and keep the config cache cleared after
+  changes.
+* The package does not register routes; you own the callback endpoints. Exclude them from
+  CSRF protection where needed.
+* Stripe webhooks are signature-verified. Paymob payment callbacks are HMAC-verified.
+  Paymob subscription **lifecycle** webhooks are not signature-verified by the package —
+  protect that endpoint in your application (see
+  [5. Subscriptions → Subscription Callbacks / Webhooks](docs/05-subscriptions.md#subscription-callbacks--webhooks)).
+* Report security issues privately to the author rather than in a public issue.
 
 ---
 
 ## Author
 
-[![Mohamed Allam](https://github.com/allamo123.png?size=90)](https://github.com/allamo123) 
+[![Mohamed Allam](https://github.com/allamo123.png?size=90)](https://github.com/allamo123)
 
-## [License](https://github.com/allamo123/laravel-grapes/blob/main/LICENSE)
+## License
 
-MIT © [Mohamed Allam ](https://github.com/allamo123)
+MIT © [Mohamed Allam](https://github.com/allamo123)
+
 

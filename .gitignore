@@ -1,3 +1,4 @@
 /vendor
 /composer.lock
 /.phpunit.result.cache
+/verify_tests.txt

@@ -50,7 +50,7 @@ PAYMOB_CURRENCY=EGP
 | `PAYMOB_API_SECRET`               | Secret-key requests (intentions, refunds)                       | Subscriptions, refunds              |
 | `PAYMOB_PUBLIC_KEY`               | Building the unified-checkout `payLink` for subscriptions        | Subscriptions                       |
 | `PAYMOB_INTEGRATION_ID`           | Card integration for iframe payments                            | Paymob card payments                |
-| `PAYMOB_MOTO_INTEGRATION_ID`      | MOTO integration used for subscription plans and intentions      | Subscriptions                       |
+| `PAYMOB_MOTO_INTEGRATION_ID`      | MOTO integration used for subscription plans and intentions ( create it throgh paymob dashboard create integration as MIGS )     | Subscriptions                       |
 | `PAYMOB_WALLET_INTEGRATION_ID`    | Wallet integration                                              | Paymob wallet payments              |
 | `PAYMOB_IFRAME_ID`                | Iframe ID used to build the card checkout URL                    | Paymob card payments                |
 | `PAYMOB_SUBSCRIPTION_WEBHOOK_URL` | URL registered with Paymob for subscription lifecycle webhooks   | Subscriptions                       |
